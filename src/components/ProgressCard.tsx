@@ -1,5 +1,9 @@
 "use client";
 
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "@/lib/gsap-config";
+import { animateSectionEntrance } from "@/lib/animations";
 import { Icon } from "./Icon";
 import { Money } from "./Money";
 import { ProgressBar } from "./ProgressBar";
@@ -14,8 +18,37 @@ interface ProgressCardProps {
 
 export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
   const pct = Math.round((stats.raised / campaign.goal) * 100);
+  const sectionRef = useRef<HTMLElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (!sectionRef.current) return;
+
+      const tl = animateSectionEntrance(sectionRef.current, {
+        header: ".progress-label",
+      });
+
+      // Right cards stagger
+      tl.fromTo(
+        sectionRef.current.querySelectorAll(".right-card, .donor-avatars"),
+        { x: 30, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" },
+        0.5
+      );
+
+      // Progress bar fill
+      const bar = sectionRef.current.querySelector(".progress-bar-fill") as HTMLElement;
+      if (bar) {
+        const width = bar.style.width;
+        gsap.fromTo(bar, { width: "0%" }, { width, duration: 1.5, ease: "power2.out", delay: 0.3 });
+      }
+    },
+    { dependencies: [], scope: sectionRef }
+  );
+
   return (
-    <section className="progress-section">
+    <section className="progress-section" ref={sectionRef}>
       <GlassCard style={{ padding: 48, maxWidth: 1440, margin: "0 auto" }}>
         <div className="progress-grid">
           <div>

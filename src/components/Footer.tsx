@@ -2,10 +2,13 @@
 
 import { Icon } from "./Icon";
 import { FundBraveLogo, LogosLogo } from "./Logos";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 export function Footer() {
+  const ref = useScrollReveal<HTMLElement>({ y: 20, duration: 0.5 });
+
   return (
-    <footer className="site-footer">
+    <footer ref={ref} className="site-footer">
       <div className="footer-inner">
         <div className="footer-top">
           <div className="footer-brand-row">

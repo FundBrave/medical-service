@@ -15,6 +15,8 @@ import { DonatePage, DonateSuccessScreen } from "@/components/DonatePage";
 import type { SuccessInfo } from "@/components/DonatePage";
 import { TransparencyPage } from "@/components/TransparencyPage";
 import { ImpactPage } from "@/components/ImpactPage";
+import { AdminPage } from "@/components/AdminPage";
+import { PrivacyPage } from "@/components/PrivacyPage";
 
 const t = CAMPAIGN_DEFAULTS;
 
@@ -138,6 +140,7 @@ export default function Home() {
           <main>
             <HeroSection
               campaign={campaign}
+              heroImage={t.heroImage}
               onDonate={() => handleNavigate("donate")}
               onTransparency={() => handleNavigate("transparency")}
             />
@@ -209,6 +212,23 @@ export default function Home() {
           stats={stats}
           rate={rate}
           impact={t.impact}
+          activeView={view}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {view === "admin" && (
+        <AdminPage
+          campaign={campaign}
+          stats={stats}
+          rate={rate}
+          transparency={t.transparency}
+          onBack={() => handleNavigate("home")}
+        />
+      )}
+
+      {view === "privacy" && (
+        <PrivacyPage
           activeView={view}
           onNavigate={handleNavigate}
         />

@@ -1,5 +1,9 @@
 "use client";
 
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "@/lib/gsap-config";
+import { animateSectionEntrance } from "@/lib/animations";
 import { Icon } from "./Icon";
 import { TokenIcon } from "./TokenIcon";
 
@@ -29,8 +33,32 @@ interface ImpactModelsProps {
 }
 
 export function ImpactModels({ title, sub, donateCard, stakeCard, showStake = true, onDonate, onStake }: ImpactModelsProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (!sectionRef.current) return;
+      animateSectionEntrance(sectionRef.current, {
+        header: ".impact-header",
+        children: ".impact-card",
+        stagger: 0.2,
+      });
+      sectionRef.current.querySelectorAll(".impact-card").forEach((card) => {
+        gsap.fromTo(
+          card.querySelectorAll(".impact-icon-wrap, .impact-title-row, .impact-desc, .impact-feats, .impact-multichain, .impact-shield, .impact-cta"),
+          { y: 20, opacity: 0 },
+          {
+            y: 0, opacity: 1, duration: 0.45, stagger: 0.08, ease: "power2.out",
+            scrollTrigger: { trigger: card, start: "top 85%", toggleActions: "play none none none" },
+          }
+        );
+      });
+    },
+    { dependencies: [], scope: sectionRef }
+  );
+
   return (
-    <section className="section-impact">
+    <section ref={sectionRef} className="section-impact">
       <div className="impact-header">
         <h2 className="impact-title">{title}</h2>
         <p className="impact-sub">{sub}</p>

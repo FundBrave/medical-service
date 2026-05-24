@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { animateSectionEntrance } from "@/lib/animations";
 import { Icon } from "./Icon";
 
 interface StatItem {
@@ -19,9 +22,22 @@ interface StatsBarProps {
 const STAT_TONES = ["primary", "secondary", "tertiary", "primary"] as const;
 
 export function StatsBar({ data, sectionTitle, sectionSub }: StatsBarProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (!sectionRef.current) return;
+      animateSectionEntrance(sectionRef.current, {
+        children: ".stat-cell",
+        stagger: 0.12,
+      });
+    },
+    { dependencies: [] }
+  );
+
   const stats = data && data.length ? data : [];
   return (
-    <section className="section-stats">
+    <section ref={sectionRef} className="section-stats">
       <div className="stats-head">
         <div>
           <p className="stats-eyebrow-line">Campaign at a glance</p>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useAccount } from "wagmi";
-import { toast } from "sonner";
-import type { Address } from "viem";
+import { useState, useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "@/lib/gsap-config";
 import { Icon } from "./Icon";
 import { Money } from "./Money";
 import { ProgressBar } from "./ProgressBar";
@@ -12,13 +11,6 @@ import { SubPageNav } from "./SubPageNav";
 import { Footer } from "./Footer";
 import { formatNGN, formatUSD } from "@/lib/format";
 import { SUPPORTED_TOKENS, PRESET_USD, PRESET_NGN, PRESET_ETH, MIN_DONATION_USD } from "@/lib/constants";
-import {
-  SUPPORTED_TOKENS as CONTRACT_TOKENS,
-  isBaseChain,
-  getExplorerUrl,
-} from "@/lib/contracts";
-import { useDonate } from "@/hooks/useDonate";
-import { useCrossChainDonate } from "@/hooks/useCrossChainDonate";
 
 function detectCardBrand(digits: string) {
   const d = digits.replace(/\s/g, "");
@@ -378,80 +370,15 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
   const [method, setMethod] = useState(methods[0]?.id || "card");
   const [selectedToken, setSelectedToken] = useState(SUPPORTED_TOKENS[0]);
   const [amount, setAmount] = useState("");
-  const [step, setStep] = useState("idle");   // used for card flow only
+  const [step, setStep] = useState("idle");
   const [recurring, setRecurring] = useState(false);
-  const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "NG", zip: "" });
-
-  // ─── Web3 hooks ──────────────────────────────────────────────────────────
-  const { address, chain } = useAccount();
-  const donate     = useDonate();
-  const crossChain = useCrossChainDonate();
-
-  // True when the wallet is connected to a non-Base chain (cross-chain CCTP path)
-  const isCrossChain = !!(chain && !isBaseChain(chain.id));
-
-  // Pending donation details needed for the approval→donate step transition
-  const pendingAmountRef = useRef<bigint>(0n);
-  const pendingIsUSDC    = useRef<boolean>(false);
-  const pendingTokenAddr = useRef<Address>("0x0000000000000000000000000000000000000000" as Address);
-
-  // ─── Effect: advance USDC/ERC20 donation after approval confirms ─────────
-  useEffect(() => {
-    if (method !== "crypto" || isCrossChain) return;
-    if (donate.step === "approving" && donate.isSuccess) {
-      donate.proceedAfterApproval(
-        pendingTokenAddr.current,
-        pendingAmountRef.current,
-        pendingIsUSDC.current
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [donate.step, donate.isSuccess]);
-
-  // ─── Effect: call onSuccess after same-chain donation confirms ───────────
-  useEffect(() => {
-    if (method !== "crypto" || isCrossChain) return;
-    if (donate.step === "success" && donate.txHash) {
-      onSuccess({
-        amount,
-        tokenSymbol: selectedToken.symbol,
-        method: "crypto",
-        txHash: donate.txHash,
-      });
-      donate.reset();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [donate.step, donate.txHash]);
-
-  // ─── Effect: call onSuccess after CCTP cross-chain confirms ─────────────
-  useEffect(() => {
-    if (method !== "crypto") return;
-    if (crossChain.step === "success" && crossChain.txHash) {
-      onSuccess({
-        amount,
-        tokenSymbol: "USDC",
-        method: "crypto",
-        txHash: crossChain.txHash,
-      });
-      crossChain.reset();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crossChain.step, crossChain.txHash]);
-
-  // Reset hooks when switching payment method
-  const handleMethodChange = (m: string) => {
-    setMethod(m);
-    setAmount("");
-    if (m === "crypto") { donate.reset(); crossChain.reset(); }
-  };
+  const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "US", zip: "" });
 
   const presets = method === "card" ? PRESET_NGN : selectedToken.native || selectedToken.symbol === "WETH" ? PRESET_ETH : PRESET_USD;
 
   const handleDonate = () => {
     if (!amount || parseFloat(amount) <= 0) return;
-
     if (method === "card") {
-      // ── Fiat (Paystack) flow — stays simulated until Paystack is integrated ──
       const cardDigits = cardForm.card.replace(/\s/g, "");
       if (!cardForm.email || cardDigits.length < 12 || cardForm.expiry.replace(/\D/g, "").length < 4 || cardForm.cvc.length < 3) {
         setStep("error");
@@ -472,64 +399,35 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
         });
       }, 2300);
     } else {
-      // ── Crypto flow — wired to real blockchain ──────────────────────────
-      if (!address) { toast.error("Connect your wallet first"); return; }
-
-      const rawFloat = parseFloat(amount);
-      if (isNaN(rawFloat) || rawFloat <= 0) return;
-
-      if (isCrossChain) {
-        // CCTP: only USDC cross-chain; amount is in USDC
-        const amountBigInt = BigInt(Math.round(rawFloat * 1e6));
-        crossChain.execute(amountBigInt);
-        return;
-      }
-
-      // Same-chain Base donation
-      const contractToken = CONTRACT_TOKENS.find((t) => t.symbol === selectedToken.symbol);
-      if (!contractToken) { toast.error("Unsupported token"); return; }
-
-      if (contractToken.isNative) {
-        // ETH donation
-        const amountBigInt = BigInt(Math.round(rawFloat * 1e18));
-        donate.donateETH(amountBigInt);
-      } else if (contractToken.symbol === "USDC") {
-        const amountBigInt = BigInt(Math.round(rawFloat * 1e6));
-        pendingAmountRef.current  = amountBigInt;
-        pendingIsUSDC.current     = true;
-        pendingTokenAddr.current  = contractToken.address as Address;
-        donate.donateUSDC(amountBigInt);
+      if (selectedToken.symbol === "USDC" || selectedToken.native) {
+        setStep("donating");
+        setTimeout(() => setStep("confirming"), 900);
+        setTimeout(() => onSuccess({
+          amount, tokenSymbol: selectedToken.symbol, method: "crypto",
+          txHash: "0x9f3a" + Math.random().toString(16).slice(2, 10) + "…b2e1",
+        }), 2200);
       } else {
-        // ERC20 (DAI / WETH etc.) — needs approve then donateERC20
-        const decimals = contractToken.decimals;
-        const amountBigInt = BigInt(Math.round(rawFloat * 10 ** decimals));
-        pendingAmountRef.current  = amountBigInt;
-        pendingIsUSDC.current     = false;
-        pendingTokenAddr.current  = contractToken.address as Address;
-        donate.donateERC20(contractToken.address as Address, amountBigInt);
+        setStep("approving");
+        setTimeout(() => setStep("donating"), 1200);
+        setTimeout(() => setStep("confirming"), 2100);
+        setTimeout(() => onSuccess({
+          amount, tokenSymbol: selectedToken.symbol, method: "crypto",
+          txHash: "0x9f3a" + Math.random().toString(16).slice(2, 10) + "…b2e1",
+        }), 3300);
       }
     }
   };
 
-  // ─── Derived step display ────────────────────────────────────────────────
-  // For crypto, mirror the hook step rather than local state
-  const cryptoStep  = isCrossChain ? crossChain.step : donate.step;
-  const displayStep = method === "crypto" ? cryptoStep : step;
-  const processing  = displayStep !== "idle" && displayStep !== "error";
-
-  const tokenSymbolForUi = method === "card" ? "NGN" : (isCrossChain ? "USDC" : selectedToken.symbol);
+  const processing = step !== "idle" && step !== "error";
+  const tokenSymbolForUi = method === "card" ? "NGN" : selectedToken.symbol;
 
   const ctaLabel = (() => {
-    if (displayStep === "charging")           return "Verifying card…";
-    if (displayStep === "processing")         return "Processing payment…";
-    if (displayStep === "approving")          return "Approving…";
-    if (displayStep === "donating")           return "Donating…";
-    if (displayStep === "burning")            return "Burning USDC on source chain…";
-    if (displayStep === "waiting_attestation") return `Waiting for attestation… (${crossChain.attestationProgress}%)`;
-    if (displayStep === "minting")            return "Completing donation on Base…";
-    if (displayStep === "confirming")         return "Confirming on chain…";
-    if (displayStep === "error")              return method === "card" ? "Check details and retry" : "Retry";
-    if (displayStep === "switch_to_base")     return "Switch to Base & Complete";
+    if (step === "charging") return "Verifying card…";
+    if (step === "processing") return "Processing payment…";
+    if (step === "approving") return "Approving…";
+    if (step === "donating") return "Donating…";
+    if (step === "confirming") return "Confirming…";
+    if (step === "error") return "Check details and retry";
     if (method === "card") {
       const ngnAmt = parseFloat(amount) || 0;
       return ngnAmt > 0 ? `Donate ₦${new Intl.NumberFormat("en-NG").format(Math.round(ngnAmt))} with card` : "Donate with card";
@@ -555,7 +453,7 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
             <div className="donate-card-glow1" />
             <div className="donate-card-glow2" />
             {methods.length > 1 && (
-              <PayMethodTabs method={method} onChange={handleMethodChange} methods={methods} />
+              <PayMethodTabs method={method} onChange={(m) => { setMethod(m); setAmount(""); }} methods={methods} />
             )}
             {method === "card" && (
               <>
@@ -582,45 +480,33 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
             {amount && parseFloat(amount) > 0 && (
               <DonateSummaryCard amount={amount} tokenSymbol={tokenSymbolForUi} method={method} rate={rate} />
             )}
-            {displayStep === "charging" && <StepBanner step={1} total={2} label="Verifying card…" sub="Checking with your bank" />}
-            {displayStep === "processing" && <StepBanner step={2} total={2} label="Processing payment…" sub="Converting to USDC for the campaign" />}
-            {displayStep === "approving" && <StepBanner step={1} total={2} label="Approving token spend…" sub="Please confirm in your wallet" />}
-            {displayStep === "donating" && <StepBanner step={2} total={2} label="Submitting donation…" sub="Please confirm in your wallet" />}
-            {displayStep === "burning" && <StepBanner step={2} total={4} label="Burning USDC…" sub="Please confirm in your wallet" />}
-            {displayStep === "waiting_attestation" && (
-              <StepBanner step={3} total={4} label="Waiting for Circle attestation…" sub={`Polled ${crossChain.attestationProgress}% — takes ~2 min on L2, ~13 min on Ethereum`} />
-            )}
-            {displayStep === "minting" && <StepBanner step={4} total={4} label="Completing donation on Base…" sub="Please confirm in your wallet" />}
-            {displayStep === "confirming" && <StepBanner step={2} total={2} label="Confirming on chain…" sub="Waiting for block confirmation" />}
-            {(displayStep === "error") && (
+            {step === "charging" && <StepBanner step={1} total={2} label="Verifying card…" sub="Checking with your bank" />}
+            {step === "processing" && <StepBanner step={2} total={2} label="Processing payment…" sub="Converting to USDC for the campaign" />}
+            {step === "approving" && <StepBanner step={1} total={2} label="Approving token spend…" sub="Please confirm in your wallet" />}
+            {step === "donating" && <StepBanner step={2} total={2} label="Submitting donation…" sub="Please confirm in your wallet" />}
+            {step === "confirming" && <StepBanner step={2} total={2} label="Confirming on chain…" sub="Waiting for block confirmation" />}
+            {step === "error" && (
               <div className="step-banner" style={{ background: "rgba(220, 38, 38, .1)", borderColor: "rgba(220, 38, 38, .3)" }}>
                 <Icon name="error" style={{ animation: "none", color: "#f87171" }} />
                 <div>
                   <div className="l1">Couldn&apos;t process that</div>
-                  <div className="l2">{method === "card" ? "Double-check your card number, expiry, and CVC." : (donate.errorMsg || crossChain.errorMsg || "Transaction failed.")}</div>
+                  <div className="l2">Double-check your card number, expiry, and CVC.</div>
                 </div>
               </div>
             )}
-            {displayStep === "switch_to_base" ? (
-              <button className="btn-tertiary-cta" onClick={() => crossChain.completeMint()}>
-                <Icon name="swap_horiz" />
-                Switch to Base &amp; Complete Donation
-              </button>
-            ) : (
-              <button className="btn-tertiary-cta" onClick={handleDonate} disabled={!amount || parseFloat(amount) <= 0 || processing}>
-                {processing ? (
-                  <>
-                    <Icon name="progress_activity" className="spin" />
-                    {ctaLabel}
-                  </>
-                ) : (
-                  <>
-                    <Icon name={method === "card" ? "credit_card" : "favorite"} fill={method === "card" ? 0 : 1} />
-                    {ctaLabel}
-                  </>
-                )}
-              </button>
-            )}
+            <button className="btn-tertiary-cta" onClick={handleDonate} disabled={!amount || parseFloat(amount) <= 0 || processing}>
+              {processing ? (
+                <>
+                  <Icon name="progress_activity" className="spin" />
+                  {ctaLabel}
+                </>
+              ) : (
+                <>
+                  <Icon name={method === "card" ? "credit_card" : "favorite"} fill={method === "card" ? 0 : 1} />
+                  {ctaLabel}
+                </>
+              )}
+            </button>
             <TrustStrip method={method} />
           </section>
         </div>
@@ -647,14 +533,33 @@ interface DonateSuccessScreenProps {
 }
 
 export function DonateSuccessScreen({ amount, tokenSymbol, method, recurring, card, txHash, donorNumber, beneficiaryNoun, beneficiaryCount, rate, onReset, onBack }: DonateSuccessScreenProps) {
+  const screenRef = useRef<HTMLDivElement>(null);
   const isFiat = method === "card";
   const numericAmount = parseFloat(amount) || 0;
   const shareText = `I just donated ₦${formatNGN(numericAmount, rate)} to ${beneficiaryNoun || "people who need it"} — join me on FundBrave!`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
+  useGSAP(
+    () => {
+      if (!screenRef.current) return;
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+
+      tl.fromTo(".success-check-outer", { scale: 0 }, { scale: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" }, 0.2);
+      tl.fromTo(".success-title", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 }, 0.5);
+      tl.fromTo(".success-amount", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 }, 0.7);
+      tl.fromTo(".success-amount-sub", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, stagger: 0.1 }, 0.9);
+      tl.fromTo(".success-flow-node", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, stagger: 0.15, ease: "back.out(2)" }, 1.0);
+      tl.fromTo(".success-flow-line", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.3, stagger: 0.1 }, 1.1);
+      tl.fromTo(".success-social", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, 1.3);
+      tl.fromTo(".success-actions", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 }, 1.4);
+      tl.fromTo(".success-share", { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, 1.6);
+    },
+    { dependencies: [], scope: screenRef }
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--surface-container-lowest)", display: "flex", flexDirection: "column" }}>
+    <div ref={screenRef} style={{ minHeight: "100vh", background: "var(--surface-container-lowest)", display: "flex", flexDirection: "column" }}>
       <SubPageNav onBack={onBack} />
       <main className="success-main" style={{ flex: 1 }}>
         <div className="success-bg">
@@ -715,17 +620,10 @@ export function DonateSuccessScreen({ amount, tokenSymbol, method, recurring, ca
           </p>
           <div className="success-actions">
             <button className="btn-tertiary-cta" onClick={onReset}>Donate again</button>
-            {!isFiat && txHash && txHash.startsWith("0x") && (
-              <a href={getExplorerUrl(txHash)} target="_blank" rel="noopener noreferrer" className="success-explorer">
-                View on block explorer
-                <Icon name="open_in_new" />
-              </a>
-            )}
-            {isFiat && (
-              <span className="success-explorer" style={{ cursor: "default", opacity: 0.6 }}>
-                {txHash}
-              </span>
-            )}
+            <a href="#" className="success-explorer">
+              {isFiat ? "View receipt" : "View on block explorer"}
+              <Icon name="open_in_new" />
+            </a>
           </div>
           <div className="success-share">
             <p className="success-share-label">Spread the word</p>
