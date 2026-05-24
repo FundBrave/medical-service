@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Inter } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -15,9 +16,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FundBrave — Donation Campaign",
+  title: "Logos Circle Benin — Medical Emergency Fund",
   description:
-    "A reusable donation campaign template — card + crypto, multisig governed, on-chain audited.",
+    "Help a Logos Circle Benin family through a critical health crisis. Father on dialysis (prostate cancer), mother facing Stage 3 ovarian cancer surgery. Every contribution counts.",
 };
 
 export default function RootLayout({
@@ -33,7 +34,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Icon } from "./Icon";
 import { FundBraveLogo } from "./Logos";
 
@@ -43,10 +44,11 @@ export function TopNavBar({ activeView, onNavigate }: TopNavBarProps) {
           ))}
         </div>
         <div className="topnav-end">
-          <button className="btn btn-primary-flat">
-            <Icon name="account_balance_wallet" size={16} />
-            <span style={{ marginLeft: 4 }}>Connect Wallet</span>
-          </button>
+          <ConnectButton
+            showBalance={false}
+            chainStatus="icon"
+            accountStatus="avatar"
+          />
         </div>
       </div>
     </nav>

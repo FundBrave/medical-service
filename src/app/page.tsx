@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CAMPAIGN_DEFAULTS } from "@/lib/constants";
+import { useCampaignStats } from "@/hooks/useCampaignStats";
 import { TopNavBar } from "@/components/TopNavBar";
 import { HeroSection } from "@/components/HeroSection";
 import { ProgressCard } from "@/components/ProgressCard";
@@ -22,6 +23,9 @@ export default function Home() {
 
   const rate = t.usdToNgn;
 
+  // Live on-chain stats — falls back to t.initialRaised/initialDonors while loading
+  const { totalRaised, donorCount, deadline, isLoading: statsLoading } = useCampaignStats();
+
   const campaign = {
     title: t.campaignName,
     location: t.location,
@@ -36,11 +40,16 @@ export default function Home() {
     subhead: t.subhead,
   };
 
-  const [stats, setStats] = useState({
-    raised: t.initialRaised,
-    donors: t.initialDonors,
-    daysLeft: t.daysLeft,
-  });
+  // Compute daysLeft from on-chain deadline when available
+  const daysLeft = deadline > 0n
+    ? Math.max(0, Math.ceil((Number(deadline) - Date.now() / 1000) / 86400))
+    : t.daysLeft;
+
+  const stats = {
+    raised:   statsLoading ? t.initialRaised : Number(totalRaised) / 1e6,
+    donors:   statsLoading ? t.initialDonors : Number(donorCount),
+    daysLeft,
+  };
 
   useEffect(() => {
     document.documentElement.style.setProperty("--primary-container", t.primaryColor);
@@ -55,11 +64,6 @@ export default function Home() {
 
   const handleSuccess = (info: SuccessInfo) => {
     setSuccessInfo(info);
-    setStats((s) => ({
-      ...s,
-      raised: s.raised + parseFloat(info.amount || "0"),
-      donors: s.donors + 1,
-    }));
     setView("success");
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   };
@@ -71,7 +75,7 @@ export default function Home() {
   };
 
   const methods: { id: string; icon: string; label: string; sub?: string }[] = [];
-  if (t.allowCard) methods.push({ id: "card", icon: "credit_card", label: "Card", sub: "Visa · MC · Amex" });
+  if (t.allowCard) methods.push({ id: "card", icon: "credit_card", label: "Card", sub: "Naira · Visa · MC" });
   if (t.allowCrypto) methods.push({ id: "crypto", icon: "currency_bitcoin", label: "Crypto", sub: "USDC · ETH" });
 
   const donateConfig = {
@@ -94,9 +98,9 @@ export default function Home() {
       if (t.allowCard) {
         arr.push(
           { label: "Card", icon: "credit_card" },
+          { label: "Bank", icon: "account_balance" },
           { label: "Apple Pay", icon: "phone_iphone" },
-          { label: "Google Pay", icon: "smartphone" },
-          { label: "Bank", icon: "account_balance" }
+          { label: "Google Pay", icon: "smartphone" }
         );
       }
       if (t.allowCrypto) {
@@ -109,8 +113,8 @@ export default function Home() {
       return arr;
     })(),
     multichainFoot: t.allowCard && t.allowCrypto
-      ? "Card via Stripe → swapped to USDC · Crypto direct to vault"
-      : t.allowCrypto ? "Cross-chain via Circle CCTP" : "Stripe payment processing · PCI compliant",
+      ? "Naira via Paystack → USDC · Crypto direct to vault"
+      : t.allowCrypto ? "Cross-chain via Circle CCTP" : "Paystack payment processing · PCI compliant",
   };
 
   const stakeCard = t.showStake ? {
