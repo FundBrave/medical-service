@@ -1,9 +1,9 @@
 export const CAMPAIGN_DEFAULTS = {
   campaignName: "Logos Circle Benin — Medical Emergency Fund",
   location: "Benin City, Nigeria",
-  goal: 2000,        // max USDC goal; display ₦3,200,000 equivalent
-  endDate: "Aug 22", // ~90 days from launch
-  daysLeft: 90,
+  goal: 625,         // $625 USDC = ₦1,000,000 at ~1600 NGN/USD
+  endDate: "Jun 7",  // 14 days from launch (2026-05-24)
+  daysLeft: 14,
   headline1: "Urgent care",
   headline2: "for a family",
   headline3: "in crisis",
@@ -19,7 +19,7 @@ export const CAMPAIGN_DEFAULTS = {
   showStake: true,
   showStats: true,
   showGallery: false,
-  usdToNgn: 1600,
+  usdToNgn: 1600, // fallback — UI uses live rate from /api/exchange-rate
   beneficiaryNoun: "families",
   beneficiaryCount: "1",
 
@@ -60,8 +60,8 @@ export const CAMPAIGN_DEFAULTS = {
     {
       value: "₦1M",
       unit: "",
-      label: "Minimum target",
-      sublabel: "~$625 USDC for dialysis",
+      label: "Campaign goal",
+      sublabel: "~$625 USDC · 14 days",
       icon: "medical_services",
     },
     {

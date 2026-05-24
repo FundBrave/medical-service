@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CAMPAIGN_DEFAULTS } from "@/lib/constants";
 import { useCampaignStats } from "@/hooks/useCampaignStats";
+import { useNGNRate } from "@/hooks/useNGNRate";
 import { TopNavBar } from "@/components/TopNavBar";
 import { HeroSection } from "@/components/HeroSection";
 import { ProgressCard } from "@/components/ProgressCard";
@@ -21,7 +22,7 @@ export default function Home() {
   const [view, setView] = useState("home");
   const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
 
-  const rate = t.usdToNgn;
+  const { rate } = useNGNRate();
 
   // Live on-chain stats — falls back to t.initialRaised/initialDonors while loading
   const { totalRaised, donorCount, deadline, isLoading: statsLoading } = useCampaignStats();

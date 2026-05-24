@@ -32,8 +32,8 @@ function requireAddress(name: string, val: string | undefined, fallback?: string
 
 // ─── Chain IDs ────────────────────────────────────────────────────────────────
 
-export const TARGET_CHAIN    = baseSepolia;  // switch to `base` after mainnet deploy
-export const TARGET_CHAIN_ID = baseSepolia.id;
+export const TARGET_CHAIN    = base;
+export const TARGET_CHAIN_ID = base.id;
 
 // ─── Contract Addresses ───────────────────────────────────────────────────────
 
@@ -49,8 +49,9 @@ export const USDC_DECIMALS = 6;
 
 /** Minimum goal: ~₦1,000,000 at 1600 NGN/USD */
 export const CAMPAIGN_GOAL_MIN_USDC = 625;
+export const CAMPAIGN_GOAL_USDC = 625; // ₦1,000,000 at 1600 NGN/USD
 /** Maximum goal: allows for ongoing dialysis + cancer treatment */
-export const CAMPAIGN_GOAL_MAX_USDC = 2_000;
+export const CAMPAIGN_GOAL_MAX_USDC = 625;
 
 // ─── UI constants (in sync with on-chain circuit breaker limits) ──────────────
 

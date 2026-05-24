@@ -26,25 +26,27 @@ const CONFIG = {
     usdc:          "0xf269f54304f8DB2dB613341CC7E189B02BEf98dE", // FundBrave mock USDC on testnet
     aavePool:      "0xA14694B3a1788D22c660C837842B2d22E24983B4",
     aUsdc:         "0xCdF55352fa73B548d81E57f2Ebb691462bD4a95F",
-    swapAdapter:   "0x5708A691d0242899Ae12dD8F47876319730F5987", // MockSwapAdapter on Base Sepolia
-    bridgeAddress: process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
+    swapAdapter:        "0x5708A691d0242899Ae12dD8F47876319730F5987", // MockSwapAdapter on Base Sepolia
+    messageTransmitter: "0x7865fAfC2db2093669d92c0197e5d6f4D14BF38B", // CCTP v1 on Base Sepolia
+    bridgeAddress:      process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
     goalMinUSDC:   625,    // ≈ ₦1,000,000 at 1600 NGN/USD
-    goalMaxUSDC:   2_000,  // room for ongoing dialysis/treatment costs
-    durationDays:  90,
+    goalMaxUSDC:   625,
+    durationDays:  14,
   },
   // Base Mainnet
   8453: {
-    name:          "Base Mainnet",
-    usdc:          "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    aavePool:      "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
-    aUsdc:         "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
-    swapAdapter:   process.env.MAINNET_SWAP_ADAPTER || null,
-    uniswapRouter: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
-    weth:          "0x4200000000000000000000000000000000000006",
-    bridgeAddress: process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
-    goalMinUSDC:   625,
-    goalMaxUSDC:   2_000,
-    durationDays:  90,
+    name:               "Base Mainnet",
+    usdc:               "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    aavePool:           "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+    aUsdc:              "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+    swapAdapter:        process.env.MAINNET_SWAP_ADAPTER || null,
+    uniswapRouter:      "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
+    weth:               "0x4200000000000000000000000000000000000006",
+    messageTransmitter: "0xAD09780d193884d503182aD4588450C416D6F9D4", // CCTP v1 on Base
+    bridgeAddress:      process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
+    goalMinUSDC:        625,
+    goalMaxUSDC:        625,
+    durationDays:       14,
   },
   // Hardhat localhost
   31337: {
@@ -116,7 +118,7 @@ async function main() {
   const goalMax       = BigInt(cfg.goalMaxUSDC) * BigInt(10 ** USDC_DECIMALS);
   const deadlineTs    = Math.floor(Date.now() / 1000) + cfg.durationDays * 86400;
 
-  console.log(`Goal: $${cfg.goalMinUSDC} – $${cfg.goalMaxUSDC} USDC  (≈ ₦${(cfg.goalMinUSDC * 1600).toLocaleString()} – ₦${(cfg.goalMaxUSDC * 1600).toLocaleString()})`);
+  console.log(`Goal: $${cfg.goalMinUSDC} USDC  (≈ ₦${(cfg.goalMinUSDC * 1600).toLocaleString()})`);
   console.log(`Deadline: ${new Date(deadlineTs * 1000).toISOString()} (${cfg.durationDays} days)\n`);
 
   // ── 1. MedicalCampaign ────────────────────────────────────────────────────
@@ -141,8 +143,10 @@ async function main() {
 
   // ── 3. AbeokutaCCTPReceiver ────────────────────────────────────────────────
   console.log("3. Deploying AbeokutaCCTPReceiver...");
+  const messageTransmitter = cfg.messageTransmitter || process.env.MESSAGE_TRANSMITTER_ADDRESS;
+  if (!messageTransmitter) throw new Error("messageTransmitter address not set for this network");
   const ReceiverFactory = await ethers.getContractFactory("AbeokutaCCTPReceiver");
-  const receiver = await ReceiverFactory.deploy(usdcAddress, campaignAddress);
+  const receiver = await ReceiverFactory.deploy(usdcAddress, campaignAddress, messageTransmitter);
   await receiver.waitForDeployment();
   const receiverAddress = await receiver.getAddress();
   console.log(`   AbeokutaCCTPReceiver deployed: ${receiverAddress}`);
