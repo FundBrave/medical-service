@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Campaigns", view: "home" },
   { label: "Donate", view: "donate" },
   { label: "Transparency", view: "transparency" },
-  { label: "Support", view: "impact" },
+  { label: "Stake", view: "impact" },
 ];
 
 interface TopNavBarProps {

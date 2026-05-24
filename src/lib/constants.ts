@@ -48,8 +48,8 @@ export const CAMPAIGN_DEFAULTS = {
   ],
   stakeCardCta: "Become a sustainer",
   stakeCardIcon: "autorenew",
-  stakeCardFootTitle: "Powered by Stripe",
-  stakeCardFootSub: "PCI-compliant recurring billing",
+  stakeCardFootTitle: "On-chain staking",
+  stakeCardFootSub: "Transparent, verifiable, fully decentralized",
   stakeCardFootIcon: "shield",
 
   galleryTitle: "The family you're helping",
@@ -133,8 +133,8 @@ export const CAMPAIGN_DEFAULTS = {
         icon: "autorenew",
         title: "Monthly sustainers",
         steps: [
-          "Sustainer card",
-          "Stripe → USDC bridge",
+          "Sustainer wallet",
+          "USDC stake",
           "Multisig family fund",
         ],
         description:
