@@ -2,8 +2,7 @@
 
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
-import { animateSectionEntrance } from "@/lib/animations";
-import { Icon } from "./Icon";
+import { gsap } from "@/lib/gsap-config";
 
 interface StatItem {
   value: string;
@@ -19,51 +18,101 @@ interface StatsBarProps {
   sectionSub?: string;
 }
 
-const STAT_TONES = ["primary", "secondary", "tertiary", "primary"] as const;
-
 export function StatsBar({ data, sectionTitle, sectionSub }: StatsBarProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
       if (!sectionRef.current) return;
-      animateSectionEntrance(sectionRef.current, {
-        children: ".stat-cell",
-        stagger: 0.12,
+      const el = sectionRef.current;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: el,
+          start: "top 80%",
+          end: "top 30%",
+          toggleActions: "play none none none",
+        },
       });
+
+      tl.fromTo(
+        el.querySelector(".sg-lead-eyebrow"),
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.5, ease: "power4.out" },
+        0
+      );
+
+      tl.fromTo(
+        el.querySelector(".sg-lead-val"),
+        { opacity: 0, y: 30, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power4.out" },
+        0.15
+      );
+
+      tl.fromTo(
+        el.querySelectorAll(".sg-lead-label, .sg-lead-sub"),
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: "power3.out" },
+        0.4
+      );
+
+      tl.fromTo(
+        el.querySelector(".sg-rest-header"),
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
+        0.2
+      );
+
+      tl.fromTo(
+        el.querySelectorAll(".sg-row"),
+        { opacity: 0, x: 30 },
+        { opacity: 1, x: 0, duration: 0.5, stagger: 0.12, ease: "power4.out" },
+        0.35
+      );
     },
     { dependencies: [], scope: sectionRef }
   );
 
   const stats = data && data.length ? data : [];
+  const lead = stats[0];
+  const rest = stats.slice(1);
+
   return (
     <section ref={sectionRef} className="section-stats">
-      <div className="stats-head">
-        <div>
-          <p className="stats-eyebrow-line">Campaign at a glance</p>
-          <h2 className="stats-head-title">{sectionTitle}</h2>
-        </div>
-        {sectionSub && <p className="stats-head-sub">{sectionSub}</p>}
-      </div>
-      <div className="stats-row">
-        {stats.map((s, i) => (
-          <div key={i} className="stat-cell">
-            <div className="stat-cell-head">
-              {s.icon && (
-                <div className={`stat-cell-icon ${STAT_TONES[i % STAT_TONES.length]}`}>
-                  <Icon name={s.icon} size={22} fill={1} />
-                </div>
-              )}
-              <span className="stat-cell-num">{String(i + 1).padStart(2, "0")}</span>
-            </div>
-            <p className="stat-cell-val">
-              {s.value}
-              {s.unit && <span className="unit">{s.unit}</span>}
+      <div className="sg-layout">
+        {lead && (
+          <div className="sg-item sg-lead">
+            <p className="sg-lead-eyebrow">Campaign at a glance</p>
+            <p className="sg-lead-val">
+              {lead.value}
+              {lead.unit && <span className="sg-lead-unit">{lead.unit}</span>}
             </p>
-            <p className="stat-cell-label">{s.label}</p>
-            <p className="stat-cell-sub">{s.sublabel}</p>
+            <p className="sg-lead-label">{lead.label}</p>
+            <p className="sg-lead-sub">{lead.sublabel}</p>
           </div>
-        ))}
+        )}
+        <div className="sg-rest">
+          <div className="sg-rest-header">
+            <h2 className="sg-rest-title">{sectionTitle}</h2>
+            {sectionSub && <p className="sg-rest-sub">{sectionSub}</p>}
+          </div>
+          <div className="sg-rest-list">
+            {rest.map((s, i) => (
+              <div key={i} className="sg-item sg-row">
+                <div className="sg-row-left">
+                  <p className="sg-row-val">
+                    {s.value}
+                    {s.unit && <span className="sg-row-unit">{s.unit}</span>}
+                  </p>
+                </div>
+                <div className="sg-row-right">
+                  <p className="sg-row-label">{s.label}</p>
+                  <p className="sg-row-sub">{s.sublabel}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
