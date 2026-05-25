@@ -11,6 +11,7 @@ interface Campaign {
   title: string;
   location: string;
   goal: number;
+  goalNGN?: number;
   endDate: string;
 }
 
@@ -64,7 +65,10 @@ function TransparencyHeroProgress({ campaign, stats, rate }: { campaign: Campaig
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 14, color: "var(--on-surface-variant)", fontWeight: 500, marginBottom: 4 }}>Campaign goal</div>
-          <Money usd={campaign.goal} rate={rate} size="lg" inline={false} decimals={0} />
+          <span className="money money-lg" style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span className="money-ngn">₦{new Intl.NumberFormat("en-NG").format(campaign.goalNGN || Math.round(campaign.goal * rate))}</span>
+            <span className="money-usd">≈ ${new Intl.NumberFormat("en-US").format(campaign.goal)}</span>
+          </span>
         </div>
       </div>
       <div className="tp-hero-body">
@@ -299,7 +303,7 @@ export function TransparencyPage({ campaign, stats, rate, transparency, benefici
         </section>
         <TransparencyCTA beneficiaryCount={beneficiaryCount} beneficiaryNoun={beneficiaryNoun} onDonate={() => onNavigate("donate")} onImpact={() => onNavigate("impact")} />
       </main>
-      <Footer />
+      <Footer onNavigate={onNavigate} />
     </>
   );
 }

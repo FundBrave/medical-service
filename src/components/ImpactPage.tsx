@@ -322,7 +322,7 @@ export function ImpactPage({ campaign, stats, rate, impact, activeView, onNaviga
         <StakeContextStats tvl={impact.tvl} generatedImpact={impact.generatedImpact} supporters={impact.supporters} rate={rate} />
         <StakeImpactLoop steps={impact.loopSteps} />
       </main>
-      <Footer />
+      <Footer onNavigate={onNavigate} />
       <AnimatePresence>
         {toast && (
           <motion.div
