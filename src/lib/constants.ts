@@ -1,8 +1,8 @@
 export const CAMPAIGN_DEFAULTS = {
   campaignName: "Save a Family Fighting Cancer",
   location: "Benin City, Nigeria",
-  goal: 625,
-  goalNGN: 1_000_000,
+  goal: 1150,
+  goalNGN: 1_500_000,
   endDate: "Jul 31",
   daysLeft: 68,
   headline1: "A family",

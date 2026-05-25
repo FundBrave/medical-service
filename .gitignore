@@ -43,3 +43,8 @@ next-env.d.ts
 # design handoff bundle (source reference, not deployed)
 /donate-fundbrave/
 design.tar.gz
+/artifacts/
+/cache/
+/contracts/node_modules/
+/contracts/artifacts/
+/contracts/cache/

@@ -47,11 +47,11 @@ export const USDC_DECIMALS = 6;
 
 // ─── Campaign parameters ──────────────────────────────────────────────────────
 
-/** Minimum goal: ~₦1,000,000 at 1600 NGN/USD */
-export const CAMPAIGN_GOAL_MIN_USDC = 625;
-export const CAMPAIGN_GOAL_USDC = 625; // ₦1,000,000 at 1600 NGN/USD
-/** Maximum goal: allows for ongoing dialysis + cancer treatment */
-export const CAMPAIGN_GOAL_MAX_USDC = 625;
+/** Minimum goal: ₦1,500,000 (~$1,150 USDC) */
+export const CAMPAIGN_GOAL_MIN_USDC = 1150;
+export const CAMPAIGN_GOAL_USDC = 1150; // ₦1,500,000
+/** Maximum goal: same as min — fixed-goal campaign */
+export const CAMPAIGN_GOAL_MAX_USDC = 1150;
 
 // ─── UI constants (in sync with on-chain circuit breaker limits) ──────────────
 
