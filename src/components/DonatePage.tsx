@@ -4,6 +4,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/gsap-config";
+import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { parseUnits } from "viem";
+import type { Address } from "viem";
 import { Icon } from "./Icon";
 import { Money } from "./Money";
 import { ProgressBar } from "./ProgressBar";
@@ -11,8 +15,11 @@ import { TokenIcon } from "./TokenIcon";
 import { CardBrandIcons, CardBrandChip } from "./CardBrandIcon";
 import { SubPageNav } from "./SubPageNav";
 import { Footer } from "./Footer";
+import { CrossChainDonate } from "./CrossChainDonate";
 import { formatNGN, formatUSD } from "@/lib/format";
 import { SUPPORTED_TOKENS, PRESET_USD, PRESET_NGN, PRESET_ETH, MIN_DONATION_USD } from "@/lib/constants";
+import { SUPPORTED_TOKENS as CONTRACT_TOKENS, isBaseChain, SOURCE_CHAINS } from "@/lib/contracts";
+import { useDonate } from "@/hooks/useDonate";
 
 function detectCardBrand(digits: string) {
   const d = digits.replace(/\s/g, "");
@@ -771,7 +778,74 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
   const [transferAmount, setTransferAmount] = useState("");
   const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "NG", zip: "" });
 
-  const presets = method === "card" || method === "transfer" ? PRESET_NGN : selectedToken.native || selectedToken.symbol === "WETH" ? PRESET_ETH : PRESET_USD;
+  // Web3 state
+  const { address, isConnected, chain } = useAccount();
+  const donate = useDonate();
+  const [isApprovalStep, setIsApprovalStep] = useState(false);
+  const [hasPendingCctp, setHasPendingCctp] = useState(false);
+
+  // Detect chain context
+  const isOnForeignChain = !!chain && !isBaseChain(chain.id);
+
+  // Parse amount to bigint for blockchain calls
+  const contractToken = CONTRACT_TOKENS.find(t => t.symbol === selectedToken.symbol);
+  const parsedCryptoAmount = (() => {
+    if (!amount || parseFloat(amount) <= 0 || !contractToken) return 0n;
+    try { return parseUnits(amount, contractToken.decimals); } catch { return 0n; }
+  })();
+
+  // Check for pending CCTP transfer on mount / address change
+  useEffect(() => {
+    if (!address) { setHasPendingCctp(false); return; }
+    try {
+      setHasPendingCctp(!!localStorage.getItem(`cctp_pending_${address.toLowerCase()}`));
+    } catch {}
+  }, [address]);
+
+  // Reset crypto state when wallet disconnects
+  useEffect(() => {
+    if (!address) {
+      donate.reset();
+      setIsApprovalStep(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
+
+  // Track when we enter the approval step
+  useEffect(() => {
+    if (donate.step === "approving") setIsApprovalStep(true);
+    if (donate.step === "success")   setIsApprovalStep(false);
+  }, [donate.step]);
+
+  // After ERC20 approval confirms, auto-proceed to donation
+  useEffect(() => {
+    if (donate.isSuccess && isApprovalStep && contractToken) {
+      setIsApprovalStep(false);
+      donate.proceedAfterApproval(
+        contractToken.address as Address,
+        parsedCryptoAmount,
+        selectedToken.symbol === "USDC"
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [donate.isSuccess]);
+
+  // When crypto donation confirms, fire onSuccess with real txHash
+  useEffect(() => {
+    if (donate.step !== "success" || method !== "crypto") return;
+    onSuccess({
+      amount,
+      tokenSymbol: selectedToken.symbol,
+      method: "crypto",
+      txHash: donate.txHash ?? "0x",
+    });
+    donate.reset();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [donate.step]);
+
+  const presets = method === "card" || method === "transfer"
+    ? PRESET_NGN
+    : (contractToken?.isNative || selectedToken.symbol === "WETH") ? PRESET_ETH : PRESET_USD;
 
   const handleDonate = () => {
     if (!amount || parseFloat(amount) <= 0) return;
@@ -801,36 +875,33 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
           txHash: "ch_" + Math.random().toString(36).slice(2, 14).toUpperCase(),
         });
       }, 2300);
+      return;
+    }
+    // Crypto: real blockchain calls
+    if (!isConnected || !contractToken || parsedCryptoAmount === 0n) return;
+    if (contractToken.isNative) {
+      donate.donateETH(parsedCryptoAmount);
+    } else if (selectedToken.symbol === "USDC") {
+      donate.donateUSDC(parsedCryptoAmount);
     } else {
-      if (selectedToken.symbol === "USDC" || selectedToken.native) {
-        setStep("donating");
-        setTimeout(() => setStep("confirming"), 900);
-        setTimeout(() => onSuccess({
-          amount, tokenSymbol: selectedToken.symbol, method: "crypto",
-          txHash: "0x9f3a" + Math.random().toString(16).slice(2, 10) + "…b2e1",
-        }), 2200);
-      } else {
-        setStep("approving");
-        setTimeout(() => setStep("donating"), 1200);
-        setTimeout(() => setStep("confirming"), 2100);
-        setTimeout(() => onSuccess({
-          amount, tokenSymbol: selectedToken.symbol, method: "crypto",
-          txHash: "0x9f3a" + Math.random().toString(16).slice(2, 10) + "…b2e1",
-        }), 3300);
-      }
+      donate.donateERC20(contractToken.address as Address, parsedCryptoAmount);
     }
   };
 
-  const processing = step !== "idle" && step !== "error";
+  const cryptoProcessing = method === "crypto" && donate.isProcessing;
+  const processing = (step !== "idle" && step !== "error") || cryptoProcessing;
   const tokenSymbolForUi = method === "card" ? "NGN" : selectedToken.symbol;
 
   const ctaLabel = (() => {
     if (step === "charging") return "Verifying card…";
     if (step === "processing") return "Processing payment…";
-    if (step === "approving") return "Approving…";
-    if (step === "donating") return "Donating…";
-    if (step === "confirming") return "Confirming…";
     if (step === "error") return "Check details and retry";
+    if (method === "crypto") {
+      if (donate.step === "approving") return "Approving…";
+      if (donate.step === "donating") return "Donating…";
+      if (donate.step === "confirming") return "Confirming…";
+      if (!isConnected) return "Connect wallet to donate";
+    }
     if (method === "transfer") {
       const ngnAmt = parseFloat(amount) || 0;
       return ngnAmt > 0 ? `I've sent ₦${new Intl.NumberFormat("en-NG").format(Math.round(ngnAmt))}` : "Confirm transfer";
@@ -917,16 +988,46 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                  style={{ display: "flex", flexDirection: "column", gap: 40 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 32 }}
                 >
-                  <DonateTokenSelector selectedToken={selectedToken} onSelect={(t) => { setSelectedToken(t); setAmount(""); }} />
-                  <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol={selectedToken.symbol} presets={presets} activeAmount={amount} rate={rate} />
-                  <DonateCrossChainInfo />
+                  {/* ── Not connected: prompt to connect ── */}
+                  {!isConnected && (
+                    <div className="crypto-connect-gate">
+                      <Icon name="account_balance_wallet" size={40} style={{ color: "var(--primary)", opacity: .7 }} />
+                      <p>Connect your wallet to donate crypto.</p>
+                      <ConnectButton />
+                    </div>
+                  )}
+
+                  {/* ── Cross-chain: user on foreign chain or has pending CCTP ── */}
+                  {isConnected && (isOnForeignChain || hasPendingCctp) && (
+                    <CrossChainDonate
+                      onSuccess={(txHash, xcAmount) => {
+                        setHasPendingCctp(false);
+                        onSuccess({ amount: xcAmount, tokenSymbol: "USDC", method: "crypto", txHash: txHash ?? "0x" });
+                      }}
+                      onPendingTransfer={() => setHasPendingCctp(true)}
+                      onReset={() => setHasPendingCctp(false)}
+                    />
+                  )}
+
+                  {/* ── Same-chain (Base): normal donation form ── */}
+                  {isConnected && !isOnForeignChain && !hasPendingCctp && (
+                    <>
+                      <DonateTokenSelector
+                        selectedToken={selectedToken}
+                        onSelect={(t) => { setSelectedToken(t); setAmount(""); donate.reset(); }}
+                      />
+                      <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol={selectedToken.symbol} presets={presets} activeAmount={amount} rate={rate} />
+                      <DonateCrossChainInfo />
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
+            {/* Summary card — shown for card/transfer, and for crypto when connected + same chain */}
             <AnimatePresence>
-              {amount && parseFloat(amount) > 0 && (
+              {amount && parseFloat(amount) > 0 && (method !== "crypto" || (isConnected && !isOnForeignChain && !hasPendingCctp)) && (
                 <motion.div
                   key="summary"
                   initial={{ opacity: 0, y: 12 }}
@@ -938,33 +1039,62 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
                 </motion.div>
               )}
             </AnimatePresence>
-            {step === "charging" && <StepBanner step={1} total={2} label="Verifying card…" sub="Checking with your bank" />}
-            {step === "processing" && <StepBanner step={2} total={2} label="Processing payment…" sub="Converting to USDC for the campaign" />}
-            {step === "approving" && <StepBanner step={1} total={2} label="Approving token spend…" sub="Please confirm in your wallet" />}
-            {step === "donating" && <StepBanner step={2} total={2} label="Submitting donation…" sub="Please confirm in your wallet" />}
-            {step === "confirming" && <StepBanner step={2} total={2} label="Confirming on chain…" sub="Waiting for block confirmation" />}
-            {step === "error" && (
-              <div className="step-banner" style={{ background: "rgba(220, 38, 38, .1)", borderColor: "rgba(220, 38, 38, .3)" }}>
-                <Icon name="error" style={{ animation: "none", color: "#f87171" }} />
-                <div>
-                  <div className="l1">Couldn&apos;t process that</div>
-                  <div className="l2">Double-check your card number, expiry, and CVC.</div>
-                </div>
-              </div>
+
+            {/* Card / transfer step banners */}
+            {method !== "crypto" && (
+              <>
+                {step === "charging" && <StepBanner step={1} total={2} label="Verifying card…" sub="Checking with your bank" />}
+                {step === "processing" && <StepBanner step={2} total={2} label="Processing payment…" sub="Converting to USDC for the campaign" />}
+                {step === "error" && (
+                  <div className="step-banner" style={{ background: "rgba(220, 38, 38, .1)", borderColor: "rgba(220, 38, 38, .3)" }}>
+                    <Icon name="error" style={{ animation: "none", color: "#f87171" }} />
+                    <div>
+                      <div className="l1">Couldn&apos;t process that</div>
+                      <div className="l2">Double-check your card number, expiry, and CVC.</div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-            <button className="btn-tertiary-cta" onClick={handleDonate} disabled={!amount || parseFloat(amount) <= 0 || processing}>
-              {processing ? (
-                <>
-                  <Icon name="progress_activity" className="spin" />
-                  {ctaLabel}
-                </>
-              ) : (
-                <>
-                  <Icon name={method === "card" ? "credit_card" : "favorite"} fill={method === "card" ? 0 : 1} />
-                  {ctaLabel}
-                </>
-              )}
-            </button>
+
+            {/* Crypto step banners — only when connected and on same chain */}
+            {method === "crypto" && isConnected && !isOnForeignChain && !hasPendingCctp && (
+              <>
+                {donate.step === "approving" && <StepBanner step={1} total={2} label="Approving token spend…" sub="Please confirm in your wallet" />}
+                {donate.step === "donating"  && <StepBanner step={2} total={2} label="Submitting donation…" sub="Please confirm in your wallet" />}
+                {donate.step === "confirming" && <StepBanner step={2} total={2} label="Confirming on chain…" sub="Waiting for block confirmation" />}
+                {donate.errorMsg && donate.step === "error" && (
+                  <div className="step-banner" style={{ background: "rgba(220, 38, 38, .1)", borderColor: "rgba(220, 38, 38, .3)" }}>
+                    <Icon name="error" style={{ animation: "none", color: "#f87171" }} />
+                    <div>
+                      <div className="l1">Transaction failed</div>
+                      <div className="l2">{donate.errorMsg}</div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* CTA button — shown for card/transfer always; for crypto only when connected + same chain */}
+            {(method !== "crypto" || (isConnected && !isOnForeignChain && !hasPendingCctp)) && (
+              <button
+                className="btn-tertiary-cta"
+                onClick={handleDonate}
+                disabled={!amount || parseFloat(amount) <= 0 || processing}
+              >
+                {processing ? (
+                  <>
+                    <Icon name="progress_activity" className="spin" />
+                    {ctaLabel}
+                  </>
+                ) : (
+                  <>
+                    <Icon name={method === "card" ? "credit_card" : method === "crypto" ? "favorite" : "check"} fill={method === "card" ? 0 : 1} />
+                    {ctaLabel}
+                  </>
+                )}
+              </button>
+            )}
             <TrustStrip method={method} />
           </section>
         </div>

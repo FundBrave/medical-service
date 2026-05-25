@@ -1730,3 +1730,88 @@ a { color: inherit; text-decoration: none; }
   .prv-section-title { font-size: 15px; }
   .prv-section-body { font-size: 13px; }
 }
+
+/* ── CrossChainDonate component ─────────────────────────────────────────────── */
+.crosschain-panel { display: flex; flex-direction: column; gap: 20px; }
+
+.crosschain-chain-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(37, 99, 235, .08); border: 1px solid rgba(37, 99, 235, .2);
+  border-radius: 12px; padding: 12px 16px; font-size: 13px;
+}
+.crosschain-chain-from, .crosschain-chain-to {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--on-surface); font-weight: 500;
+}
+.crosschain-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  background: rgba(37, 99, 235, .15); color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, .25); border-radius: 6px; padding: 2px 6px;
+}
+
+.crosschain-info-note {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px; padding: 12px 14px;
+}
+.crosschain-info-note p { font-size: 12px; color: var(--on-surface-variant); margin: 0; line-height: 1.6; }
+
+.crosschain-balance {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 10px 14px; font-size: 13px;
+}
+.crosschain-balance span { color: var(--on-surface-variant); }
+.crosschain-balance strong { color: var(--on-surface); }
+
+.crosschain-meta { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.crosschain-meta-row {
+  display: flex; justify-content: space-between;
+  color: var(--on-surface-variant);
+}
+.crosschain-meta-row strong { color: var(--on-surface); font-weight: 500; }
+
+.crosschain-progress-wrap { display: flex; flex-direction: column; gap: 6px; }
+.crosschain-progress-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: rgba(195, 198, 215, .4);
+}
+.crosschain-progress-track { height: 4px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.crosschain-progress-bar { height: 100%; background: #2563eb; border-radius: 4px; transition: width 1s linear; }
+
+.crosschain-explorer {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--primary); text-decoration: none;
+}
+.crosschain-explorer:hover { text-decoration: underline; }
+.crosschain-explorer.muted { color: rgba(195, 198, 215, .3); }
+.crosschain-explorer.muted:hover { color: rgba(195, 198, 215, .6); }
+
+.crosschain-reset-btn {
+  background: transparent; border: 0; font-size: 12px;
+  color: rgba(195, 198, 215, .3); cursor: pointer; transition: color .2s;
+  padding: 4px 0;
+}
+.crosschain-reset-btn:hover { color: rgba(195, 198, 215, .6); }
+
+.crosschain-footer {
+  font-size: 11px; color: rgba(195, 198, 215, .25);
+  text-align: center; margin: 0;
+}
+
+.crosschain-success {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  text-align: center; padding: 24px 0;
+}
+.crosschain-success h3 { font-size: 18px; font-weight: 700; margin: 0; }
+.crosschain-success p { font-size: 13px; color: var(--on-surface-variant); margin: 0; }
+.crosschain-note { font-size: 11px !important; color: rgba(195, 198, 215, .35) !important; }
+
+/* ── Crypto connect gate (not connected) ───────────────────────────────────── */
+.crypto-connect-gate {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 40px 24px; text-align: center;
+  background: rgba(255,255,255,.02); border: 1px dashed rgba(67, 70, 85, .3);
+  border-radius: 16px;
+}
+.crypto-connect-gate p { font-size: 14px; color: var(--on-surface-variant); margin: 0; }

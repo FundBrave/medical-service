@@ -1,7 +1,7 @@
 "use client";
 
 import { WagmiProvider, http } from "wagmi";
-import { base, mainnet, arbitrum, optimism } from "wagmi/chains";
+import { baseSepolia, sepolia, optimismSepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, getDefaultConfig, darkTheme } from "@rainbow-me/rainbowkit";
 import { Toaster } from "sonner";
@@ -33,18 +33,13 @@ if (typeof window !== "undefined") {
 
 const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_KEY;
 const rpc = {
-  base: alchemyKey
-    ? `https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`
-    : "https://mainnet.base.org",
-  ethereum: alchemyKey
-    ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`
-    : "https://cloudflare-eth.com",
-  arbitrum: alchemyKey
-    ? `https://arb-mainnet.g.alchemy.com/v2/${alchemyKey}`
-    : "https://arb1.arbitrum.io/rpc",
-  optimism: alchemyKey
-    ? `https://opt-mainnet.g.alchemy.com/v2/${alchemyKey}`
-    : "https://mainnet.optimism.io",
+  baseSepolia: alchemyKey
+    ? `https://base-sepolia.g.alchemy.com/v2/${alchemyKey}`
+    : "https://sepolia.base.org",
+  sepolia: alchemyKey
+    ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`
+    : "https://ethereum-sepolia-rpc.publicnode.com",
+  optimismSepolia: "https://sepolia.optimism.io",
 };
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://medical.fundbrave.com";
@@ -56,12 +51,11 @@ const config = getDefaultConfig({
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "PLACEHOLDER",
   appUrl,
   appDescription: "Raise funds for urgent medical care for a Logos Circle Benin family in crisis.",
-  chains: [base, mainnet, arbitrum, optimism],
+  chains: [baseSepolia, sepolia, optimismSepolia],
   transports: {
-    [base.id]:      http(rpc.base),
-    [mainnet.id]:   http(rpc.ethereum),
-    [arbitrum.id]:  http(rpc.arbitrum),
-    [optimism.id]:  http(rpc.optimism),
+    [baseSepolia.id]:      http(rpc.baseSepolia),
+    [sepolia.id]:          http(rpc.sepolia),
+    [optimismSepolia.id]:  http(rpc.optimismSepolia),
   },
   ssr: false,
 });

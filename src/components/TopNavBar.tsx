@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/gsap-config";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Icon } from "./Icon";
 import { FundBraveLogo } from "./Logos";
 
@@ -33,6 +34,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
       <motion.line
         x1="3" x2="19" y1="11" y2="11"
         stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+        initial={{ opacity: 1 }}
         animate={open ? { opacity: 0, x1: 11, x2: 11 } : { opacity: 1, x1: 3, x2: 19 }}
         transition={{ duration: 0.2 }}
       />
@@ -50,7 +52,10 @@ function HamburgerIcon({ open }: { open: boolean }) {
 export function TopNavBar({ activeView, onNavigate }: TopNavBarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -105,10 +110,9 @@ export function TopNavBar({ activeView, onNavigate }: TopNavBarProps) {
             ))}
           </div>
           <div className="topnav-end">
-            <button className="btn btn-primary-flat topnav-wallet-desktop">
-              <Icon name="account_balance_wallet" size={16} />
-              <span style={{ marginLeft: 4 }}>Connect Wallet</span>
-            </button>
+            <div className="topnav-wallet-desktop">
+              {mounted && <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />}
+            </div>
             <button
               className="topnav-hamburger"
               onClick={() => setDrawerOpen(!drawerOpen)}
@@ -160,10 +164,9 @@ export function TopNavBar({ activeView, onNavigate }: TopNavBarProps) {
 
               <div className="drawer-divider" />
 
-              <button className="drawer-wallet-btn" onClick={() => setDrawerOpen(false)}>
-                <Icon name="account_balance_wallet" size={20} />
-                <span>Connect Wallet</span>
-              </button>
+              <div className="drawer-wallet-btn">
+                {mounted && <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />}
+              </div>
 
               <div className="drawer-footer">
                 <p>Powered by Base · Secured by multisig</p>

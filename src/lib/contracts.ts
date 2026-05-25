@@ -32,8 +32,8 @@ function requireAddress(name: string, val: string | undefined, fallback?: string
 
 // ─── Chain IDs ────────────────────────────────────────────────────────────────
 
-export const TARGET_CHAIN    = base;
-export const TARGET_CHAIN_ID = base.id;
+export const TARGET_CHAIN    = baseSepolia;
+export const TARGET_CHAIN_ID = baseSepolia.id;
 
 // ─── Contract Addresses ───────────────────────────────────────────────────────
 
