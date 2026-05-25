@@ -32,7 +32,7 @@ export function StatsBar({ data, sectionTitle, sectionSub }: StatsBarProps) {
         stagger: 0.12,
       });
     },
-    { dependencies: [] }
+    { dependencies: [], scope: sectionRef }
   );
 
   const stats = data && data.length ? data : [];

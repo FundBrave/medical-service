@@ -33,6 +33,7 @@ export default function Home() {
     title: t.campaignName,
     location: t.location,
     goal: t.goal,
+    goalNGN: t.goalNGN,
     currency: "USDC",
     endDate: t.endDate,
     headlineParts: [

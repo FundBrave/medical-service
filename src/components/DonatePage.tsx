@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/gsap-config";
 import { Icon } from "./Icon";
 import { Money } from "./Money";
 import { ProgressBar } from "./ProgressBar";
 import { TokenIcon } from "./TokenIcon";
+import { CardBrandIcons, CardBrandChip } from "./CardBrandIcon";
 import { SubPageNav } from "./SubPageNav";
 import { Footer } from "./Footer";
 import { formatNGN, formatUSD } from "@/lib/format";
@@ -39,10 +41,31 @@ interface PayMethodTabsProps {
 }
 
 function PayMethodTabs({ method, onChange, methods }: PayMethodTabsProps) {
+  const activeIdx = methods.findIndex((m) => m.id === method);
   return (
-    <div className="method-tabs">
+    <div className="method-tabs" style={{ position: "relative" }}>
+      <motion.div
+        className="method-tab-indicator"
+        layout
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        style={{
+          position: "absolute",
+          top: 4, bottom: 4,
+          left: `calc(${activeIdx} * (100% - 8px) / ${methods.length} + 4px)`,
+          width: `calc((100% - 8px) / ${methods.length})`,
+          borderRadius: 10,
+          background: "var(--surface-container-high)",
+          boxShadow: "0 1px 0 rgba(255,255,255,.06) inset",
+          zIndex: 0,
+        }}
+      />
       {methods.map((m) => (
-        <button key={m.id} className={`method-tab${method === m.id ? " active" : ""}`} onClick={() => onChange(m.id)}>
+        <button
+          key={m.id}
+          className={`method-tab${method === m.id ? " active" : ""}`}
+          onClick={() => onChange(m.id)}
+          style={{ position: "relative", zIndex: 1, background: "transparent" }}
+        >
           <Icon name={m.icon} />
           {m.label}
           {m.sub && <span className="method-tab-sub">{m.sub}</span>}
@@ -90,11 +113,7 @@ function FiatCardForm({ form, setForm }: { form: CardForm; setForm: (f: CardForm
         <div className="card-field">
           <label className="card-field-label">Card</label>
           <input inputMode="numeric" placeholder="1234 1234 1234 1234" value={form.card} onChange={(e) => setForm({ ...form, card: formatCardNumber(e.target.value) })} />
-          <div className="card-field-icons">
-            <span className={`card-brand-chip visa${brand && brand !== "visa" ? " dim" : ""}`}>VISA</span>
-            <span className={`card-brand-chip mc${brand && brand !== "mc" ? " dim" : ""}`}>MC</span>
-            <span className={`card-brand-chip amex${brand && brand !== "amex" ? " dim" : ""}`}>AMEX</span>
-          </div>
+          <CardBrandIcons activeBrand={brand} />
         </div>
         <div className="card-field card-field-twocol">
           <div>
@@ -444,7 +463,7 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
           <DonateCampaignBanner campaign={campaign} stats={stats} rate={rate} />
           <div className="donate-title-area">
             <div className="donate-title-icon">
-              <Icon name={donateConfig.iconName || "favorite"} />
+              <Icon name={donateConfig.iconName || "favorite"} size={36} fill={1} />
             </div>
             <h1 className="donate-title">{donateConfig.title || "Make a Donation"}</h1>
             <p className="donate-title-sub">{donateConfig.sub}</p>
@@ -455,31 +474,57 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
             {methods.length > 1 && (
               <PayMethodTabs method={method} onChange={(m) => { setMethod(m); setAmount(""); }} methods={methods} />
             )}
-            {method === "card" && (
-              <>
-                <div className="donate-section">
-                  <label className="donate-label">Quick pay</label>
-                  <WalletPayRow onPay={handleDonate} />
-                </div>
-                <div className="divider-or">or pay with card</div>
-                <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol="NGN" presets={presets} activeAmount={amount} rate={rate} />
-                <div className="donate-section">
-                  <label className="donate-label">Card details</label>
-                  <FiatCardForm form={cardForm} setForm={setCardForm} />
-                </div>
-                <RecurringRow value={recurring} onChange={setRecurring} />
-              </>
-            )}
-            {method === "crypto" && (
-              <>
-                <DonateTokenSelector selectedToken={selectedToken} onSelect={(t) => { setSelectedToken(t); setAmount(""); }} />
-                <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol={selectedToken.symbol} presets={presets} activeAmount={amount} rate={rate} />
-                <DonateCrossChainInfo />
-              </>
-            )}
-            {amount && parseFloat(amount) > 0 && (
-              <DonateSummaryCard amount={amount} tokenSymbol={tokenSymbolForUi} method={method} rate={rate} />
-            )}
+            <AnimatePresence mode="wait">
+              {method === "card" && (
+                <motion.div
+                  key="card"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                  style={{ display: "flex", flexDirection: "column", gap: 40 }}
+                >
+                  <div className="donate-section">
+                    <label className="donate-label">Quick pay</label>
+                    <WalletPayRow onPay={handleDonate} />
+                  </div>
+                  <div className="divider-or">or pay with card</div>
+                  <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol="NGN" presets={presets} activeAmount={amount} rate={rate} />
+                  <div className="donate-section">
+                    <label className="donate-label">Card details</label>
+                    <FiatCardForm form={cardForm} setForm={setCardForm} />
+                  </div>
+                  <RecurringRow value={recurring} onChange={setRecurring} />
+                </motion.div>
+              )}
+              {method === "crypto" && (
+                <motion.div
+                  key="crypto"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                  style={{ display: "flex", flexDirection: "column", gap: 40 }}
+                >
+                  <DonateTokenSelector selectedToken={selectedToken} onSelect={(t) => { setSelectedToken(t); setAmount(""); }} />
+                  <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol={selectedToken.symbol} presets={presets} activeAmount={amount} rate={rate} />
+                  <DonateCrossChainInfo />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
+              {amount && parseFloat(amount) > 0 && (
+                <motion.div
+                  key="summary"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                  <DonateSummaryCard amount={amount} tokenSymbol={tokenSymbolForUi} method={method} rate={rate} />
+                </motion.div>
+              )}
+            </AnimatePresence>
             {step === "charging" && <StepBanner step={1} total={2} label="Verifying card…" sub="Checking with your bank" />}
             {step === "processing" && <StepBanner step={2} total={2} label="Processing payment…" sub="Converting to USDC for the campaign" />}
             {step === "approving" && <StepBanner step={1} total={2} label="Approving token spend…" sub="Please confirm in your wallet" />}
@@ -590,7 +635,7 @@ export function DonateSuccessScreen({ amount, tokenSymbol, method, recurring, ca
               marginBottom: 32, fontSize: 14,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span className={`card-brand-chip ${card.brand || "visa"}`}>{(card.brand || "VISA").toUpperCase()}</span>
+                <CardBrandChip brand={card.brand} />
                 <span style={{ color: "var(--on-surface-variant)" }}>{"••••"} {card.last4}</span>
               </div>
               <div style={{ color: "var(--on-surface-variant)", fontFamily: "var(--f-mono)", fontSize: 12 }}>{txHash}</div>

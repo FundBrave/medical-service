@@ -79,7 +79,7 @@ export function PhotoGallery({ title, sub, items }: PhotoGalleryProps) {
         }
       );
     },
-    { dependencies: [] }
+    { dependencies: [], scope: sectionRef }
   );
 
   const data = (items || []).filter((i) => i && (i.tag || i.title || i.src));
