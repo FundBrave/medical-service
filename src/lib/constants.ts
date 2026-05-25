@@ -2,6 +2,7 @@ export const CAMPAIGN_DEFAULTS = {
   campaignName: "Save a Family Fighting Cancer",
   location: "Benin City, Nigeria",
   goal: 625,
+  goalNGN: 1_000_000,
   endDate: "Jul 31",
   daysLeft: 68,
   headline1: "A family",
@@ -14,7 +15,8 @@ export const CAMPAIGN_DEFAULTS = {
   primaryColor: "#7c3aed",
   secondaryColor: "#0d9488",
   tertiaryColor: "#b54e00",
-  allowCard: true,
+  allowCard: false,
+  allowTransfer: true,
   allowCrypto: true,
   showStake: true,
   showStats: true,
@@ -25,11 +27,11 @@ export const CAMPAIGN_DEFAULTS = {
 
   impactTitle: "Two ways to help",
   impactSub:
-    "A one-time gift or ongoing monthly support — both go directly toward their medical care.",
-  donateCardTitle: "One-time gift",
+    "A one-time donation or ongoing monthly support — both go directly toward their medical care.",
+  donateCardTitle: "One-time donation",
   donateCardPill: "Instant",
   donateCardDesc:
-    "Pay by card or crypto. 100% of your gift reaches the family — no platform fees taken.",
+    "Pay by card or crypto. 100% of your donation reaches the family — no platform fees taken.",
   donateCardFeatures: [
     "Receipt within 60 seconds",
     "Zero platform fees",
@@ -37,19 +39,19 @@ export const CAMPAIGN_DEFAULTS = {
   ],
   donateCardCta: "Give now",
   donateCardIcon: "volunteer_activism",
-  stakeCardTitle: "Monthly sustainer",
-  stakeCardPill: "Recurring",
+  stakeCardTitle: "Stake & Earn",
+  stakeCardPill: "Variable APY",
   stakeCardDesc:
-    "Cancer treatment isn't a one-time cost. Become a monthly supporter and help cover ongoing dialysis, medication, and post-operative care.",
+    "Stake USDC into Aave V3 and keep your principal. Yield is split between you and the campaign — passive impact without losing your funds.",
   stakeCardFeatures: [
-    "Cover weekly dialysis sessions",
-    "Monthly treatment update",
-    "Cancel anytime",
+    "Keep your initial capital",
+    "Passive impact generation",
+    "Adjustable yield split ratio",
   ],
-  stakeCardCta: "Become a sustainer",
-  stakeCardIcon: "autorenew",
-  stakeCardFootTitle: "On-chain staking",
-  stakeCardFootSub: "Transparent, verifiable, fully decentralized",
+  stakeCardCta: "Start Staking",
+  stakeCardIcon: "savings",
+  stakeCardFootTitle: "Powered by Aave V3",
+  stakeCardFootSub: "Battle-tested DeFi yield on Base",
   stakeCardFootIcon: "shield",
 
   galleryTitle: "The family you're helping",
@@ -57,7 +59,7 @@ export const CAMPAIGN_DEFAULTS = {
     "A Logos Circle Benin family fighting two cancer diagnoses at once. Their children could lose both parents. Your generosity is their lifeline.",
   statsTitle: "Where every dollar goes",
   statsSub:
-    "Full transparency. Every transaction logged on-chain so you can see exactly how your gift is used.",
+    "Full transparency. Every transaction logged on-chain so you can see exactly how your donation is used.",
   stats: [
     {
       value: "2",
@@ -218,9 +220,9 @@ export const CAMPAIGN_DEFAULTS = {
   },
 
   impact: {
-    title: "Stake to fund care",
-    sub: "Become a monthly sustainer and your contribution funds care every month.",
-    accent: "Choose your impact share.",
+    title: "Stake to Support",
+    sub: "Deposit USDC into Aave V3 on Base. Your principal stays yours — only the yield funds medical care.",
+    accent: "Earn while you help.",
     tvl: 0,
     generatedImpact: 0,
     supporters: 0,
@@ -228,16 +230,16 @@ export const CAMPAIGN_DEFAULTS = {
     demoYield: 7.5,
     loopSteps: [
       {
-        title: "Become a sustainer",
-        desc: "Set up a recurring monthly gift via card or USDC. Cancel any time.",
+        title: "Deposit USDC",
+        desc: "Stake any amount of USDC. It's deposited into Aave V3 on Base and starts earning yield immediately.",
       },
       {
-        title: "Funds pool & disburse",
-        desc: "All sustainer payments are batched and disbursed by the multisig directly to hospitals and pharmacies.",
+        title: "Earn yield",
+        desc: "Aave generates variable APY on your deposit. The yield is split between you and the campaign based on your chosen ratio.",
       },
       {
-        title: "Care delivered",
-        desc: "Each disbursement covers a specific medical need — dialysis, surgery prep, medication, or post-op care — with on-chain receipts.",
+        title: "Fund care",
+        desc: "The campaign's share of yield is disbursed by the multisig to cover dialysis sessions, surgery costs, and medication — with on-chain receipts.",
       },
     ],
   },

@@ -22,7 +22,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 }
 
 interface AdminPageProps {
-  campaign: { title: string; goal: number };
+  campaign: { title: string; goal: number; goalNGN?: number };
   stats: { raised: number; donors: number; daysLeft: number };
   rate: number;
   transparency: {
@@ -108,7 +108,7 @@ export function AdminPage({ campaign, stats, rate, transparency, onBack }: Admin
             </button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
-            <StatCard label="Total Raised" value={`₦${formatNGN(stats.raised, rate)}`} sub={`${progressPct}% of ₦${formatNGN(campaign.goal, rate)}`} />
+            <StatCard label="Total Raised" value={`₦${formatNGN(stats.raised, rate)}`} sub={`${progressPct}% of ₦${new Intl.NumberFormat("en-NG").format(campaign.goalNGN || Math.round(campaign.goal * rate))}`} />
             <StatCard label="USDC in Contract" value={`$${Math.round(usdcBalance).toLocaleString()}`} sub="available to withdraw" />
             <StatCard label="Donors" value={stats.donors.toString()} />
             <StatCard label="Status" value={stats.daysLeft > 0 ? "Active" : "Ended"} sub={`${stats.daysLeft} days remaining`} />

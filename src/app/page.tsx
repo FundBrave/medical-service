@@ -33,6 +33,7 @@ export default function Home() {
     title: t.campaignName,
     location: t.location,
     goal: t.goal,
+    goalNGN: t.goalNGN,
     currency: "USDC",
     endDate: t.endDate,
     headlineParts: [
@@ -78,6 +79,7 @@ export default function Home() {
   };
 
   const methods: { id: string; icon: string; label: string; sub?: string }[] = [];
+  if (t.allowTransfer) methods.push({ id: "transfer", icon: "account_balance", label: "Bank Transfer", sub: "Naira · OPay" });
   if (t.allowCard) methods.push({ id: "card", icon: "credit_card", label: "Card", sub: "Naira · Visa · MC" });
   if (t.allowCrypto) methods.push({ id: "crypto", icon: "currency_bitcoin", label: "Crypto", sub: "USDC · ETH" });
 
@@ -95,15 +97,12 @@ export default function Home() {
     features: t.donateCardFeatures,
     cta: t.donateCardCta,
     icon: t.donateCardIcon,
-    multichainLabel: t.allowCard && t.allowCrypto ? "Payment methods" : t.allowCrypto ? "Multichain support" : "Payment methods",
+    multichainLabel: t.allowTransfer && t.allowCrypto ? "Payment methods" : t.allowCrypto ? "Multichain support" : "Payment methods",
     methods: (() => {
       const arr: { label: string; icon?: string; token?: string }[] = [];
-      if (t.allowCard) {
+      if (t.allowTransfer) {
         arr.push(
-          { label: "Card", icon: "credit_card" },
-          { label: "Bank", icon: "account_balance" },
-          { label: "Apple Pay", icon: "phone_iphone" },
-          { label: "Google Pay", icon: "smartphone" }
+          { label: "Bank Transfer", icon: "account_balance" },
         );
       }
       if (t.allowCrypto) {
@@ -115,9 +114,9 @@ export default function Home() {
       }
       return arr;
     })(),
-    multichainFoot: t.allowCard && t.allowCrypto
-      ? "Naira via Paystack → USDC · Crypto direct to vault"
-      : t.allowCrypto ? "Cross-chain via Circle CCTP" : "Paystack payment processing · PCI compliant",
+    multichainFoot: t.allowTransfer && t.allowCrypto
+      ? "Bank transfer in Naira · Crypto direct to vault"
+      : t.allowCrypto ? "Cross-chain via Circle CCTP" : "Direct bank transfer",
   };
 
   const stakeCard = t.showStake ? {
@@ -161,7 +160,7 @@ export default function Home() {
               <PhotoGallery title={t.galleryTitle} sub={t.gallerySub} items={t.galleryItems} />
             )}
           </main>
-          <Footer />
+          <Footer onNavigate={handleNavigate} />
         </>
       )}
 

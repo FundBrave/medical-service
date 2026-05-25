@@ -32,7 +32,7 @@ export function HeroSection({ campaign, heroImage, onDonate, onTransparency }: H
         const bg = sectionRef.current!.querySelector(".hero-photo-wrap");
         if (bg) {
           gsap.to(bg, {
-            yPercent: 20,
+            yPercent: 10,
             ease: "none",
             scrollTrigger: {
               trigger: sectionRef.current!,
