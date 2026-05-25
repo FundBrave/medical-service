@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/gsap-config";
@@ -101,6 +101,109 @@ interface CardForm {
   zip: string;
 }
 
+const COUNTRIES = [
+  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭" },
+  { code: "KE", name: "Kenya", flag: "🇰🇪" },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
+  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "CA", name: "Canada", flag: "🇨🇦" },
+  { code: "DE", name: "Germany", flag: "🇩🇪" },
+  { code: "FR", name: "France", flag: "🇫🇷" },
+  { code: "IN", name: "India", flag: "🇮🇳" },
+  { code: "AE", name: "United Arab Emirates", flag: "🇦🇪" },
+  { code: "SG", name: "Singapore", flag: "🇸🇬" },
+  { code: "AU", name: "Australia", flag: "🇦🇺" },
+  { code: "BR", name: "Brazil", flag: "🇧🇷" },
+];
+
+function CountrySelect({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selected = COUNTRIES.find((c) => c.code === value) || COUNTRIES[0];
+
+  const filtered = search
+    ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase()))
+    : COUNTRIES;
+
+  const close = useCallback(() => { setOpen(false); setSearch(""); }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    };
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("keydown", keyHandler); };
+  }, [open, close]);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  return (
+    <div className="country-select" ref={ref}>
+      <button
+        type="button"
+        className="country-select-trigger"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="country-flag">{selected.flag}</span>
+        <span className="country-name">{selected.name}</span>
+        <Icon name="expand_more" size={18} className={`country-chev${open ? " open" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="country-dropdown"
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="country-search-wrap">
+              <Icon name="search" size={16} />
+              <input
+                ref={inputRef}
+                className="country-search"
+                type="text"
+                placeholder="Search country…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="country-list">
+              {filtered.length === 0 && (
+                <div className="country-empty">No results</div>
+              )}
+              {filtered.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  className={`country-option${c.code === value ? " active" : ""}`}
+                  onClick={() => { onChange(c.code); close(); }}
+                >
+                  <span className="country-flag">{c.flag}</span>
+                  <span className="country-option-name">{c.name}</span>
+                  <span className="country-option-code">{c.code}</span>
+                  {c.code === value && <Icon name="check" size={16} />}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function FiatCardForm({ form, setForm }: { form: CardForm; setForm: (f: CardForm) => void }) {
   const brand = detectCardBrand(form.card);
   return (
@@ -125,19 +228,9 @@ function FiatCardForm({ form, setForm }: { form: CardForm; setForm: (f: CardForm
             <input inputMode="numeric" placeholder="123" maxLength={4} value={form.cvc} onChange={(e) => setForm({ ...form, cvc: e.target.value.replace(/\D/g, "") })} />
           </div>
         </div>
-        <div className="card-field">
+        <div className="card-field card-field-country">
           <label className="card-field-label">Country</label>
-          <select style={{ flex: 1, background: "transparent", border: 0, outline: "none", color: "var(--on-surface)", fontSize: 15 }} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
-            <option value="US">United States</option>
-            <option value="GB">United Kingdom</option>
-            <option value="NG">Nigeria</option>
-            <option value="CA">Canada</option>
-            <option value="DE">Germany</option>
-            <option value="FR">France</option>
-            <option value="IN">India</option>
-            <option value="KE">Kenya</option>
-            <option value="ZA">South Africa</option>
-          </select>
+          <CountrySelect value={form.country} onChange={(code) => setForm({ ...form, country: code })} />
           <input placeholder="ZIP / Postal" style={{ width: 110 }} value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} />
         </div>
       </div>
@@ -182,14 +275,15 @@ function TrustStrip({ method }: { method: string }) {
   );
 }
 
-function DonateCampaignBanner({ campaign, stats, rate }: { campaign: { goal: number }; stats: { raised: number }; rate: number }) {
+function DonateCampaignBanner({ campaign, stats, rate }: { campaign: { goal: number; goalNGN?: number }; stats: { raised: number }; rate: number }) {
   const pct = (stats.raised / campaign.goal) * 100;
+  const goalNgn = campaign.goalNGN || Math.round(campaign.goal * rate);
   return (
     <div className="donate-banner">
       <div className="donate-banner-row">
         <div className="raised">
           <span className="raised-amount">{"₦"}{formatNGN(stats.raised, rate)}</span>
-          raised of <Money usd={campaign.goal} rate={rate} size="sm" hideUsd decimals={0} />
+          raised of <span className="money money-sm"><span className="money-ngn">₦{new Intl.NumberFormat("en-NG").format(goalNgn)}</span></span>
         </div>
         <span className="funded">{pct.toFixed(0)}% funded</span>
       </div>
@@ -347,6 +441,130 @@ function DonateCrossChainInfo() {
   );
 }
 
+function OPayLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+      <path d="M14.137 6a11.475 11.475 0 0 0-6.802 2.203 11.38 11.38 0 0 0-4.156 5.792.211.211 0 0 0 .107.252c.03.015.063.023.096.023h4.399a.212.212 0 0 0 .19-.114 6.945 6.945 0 0 1 2.632-2.727 6.993 6.993 0 0 1 3.68-.946c3.72.067 6.6 3.112 6.735 6.62a6.869 6.869 0 0 1-1.347 4.352 6.93 6.93 0 0 1-3.78 2.566 6.96 6.96 0 0 1-4.564-.338 6.914 6.914 0 0 1-3.356-3.096.211.211 0 0 0-.188-.114h-4.4a.213.213 0 0 0-.204.275 11.368 11.368 0 0 0 3.391 5.186 11.455 11.455 0 0 0 5.618 2.652c2.083.351 4.222.12 6.182-.665a11.424 11.424 0 0 0 4.917-3.787A11.324 11.324 0 0 0 24.31 12.27a11.395 11.395 0 0 0-4.197-4.566A11.474 11.474 0 0 0 14.137 6" fill="#1DCF9F"/>
+      <path fillRule="evenodd" clipRule="evenodd" d="M7.62 19.517H2.229a.226.226 0 0 1-.211-.145.235.235 0 0 1-.017-.089v-3.692a.235.235 0 0 1 .14-.216.226.226 0 0 1 .088-.018h5.393a.226.226 0 0 1 .211.145.235.235 0 0 1 .017.089v3.692a.235.235 0 0 1-.14.216.226.226 0 0 1-.088.018" fill="#210F60"/>
+    </svg>
+  );
+}
+
+function BankTransferDetails() {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [launchState, setLaunchState] = useState<"idle" | "copied" | "launched">("idle");
+
+  const copy = (text: string, field: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleCopyAndOpen = () => {
+    navigator.clipboard?.writeText("6557984463");
+    setLaunchState("copied");
+
+    setTimeout(() => {
+      setLaunchState("launched");
+
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+      if (isAndroid) {
+        window.location.href = "intent://#Intent;scheme=opay;package=com.opay.pay;end";
+      } else if (isIOS) {
+        window.location.href = "opay://";
+      }
+
+      setTimeout(() => setLaunchState("idle"), 4000);
+    }, 600);
+  };
+
+  return (
+    <div className="donate-section">
+      <label className="donate-label">Transfer to this account</label>
+      <div className="bank-transfer-card">
+        <div className="bank-transfer-header">
+          <div className="bank-transfer-badge">
+            <OPayLogo size={22} />
+            <span>OPay</span>
+          </div>
+          <span className="bank-transfer-tag">Direct Transfer</span>
+        </div>
+
+        <div className="bank-transfer-fields">
+          <div className="bank-transfer-row">
+            <div className="bank-transfer-field">
+              <span className="bank-transfer-label">Account Number</span>
+              <span className="bank-transfer-value mono">6557984463</span>
+            </div>
+            <button
+              type="button"
+              className={`bank-copy-btn${copiedField === "number" ? " copied" : ""}`}
+              onClick={() => copy("6557984463", "number")}
+            >
+              <Icon name={copiedField === "number" ? "check" : "content_copy"} size={16} />
+              {copiedField === "number" ? "Copied" : "Copy"}
+            </button>
+          </div>
+
+          <div className="bank-transfer-row">
+            <div className="bank-transfer-field">
+              <span className="bank-transfer-label">Account Name</span>
+              <span className="bank-transfer-value">PURITY EZEMWENGHIAN USIEMWANTA</span>
+            </div>
+            <button
+              type="button"
+              className={`bank-copy-btn${copiedField === "name" ? " copied" : ""}`}
+              onClick={() => copy("PURITY EZEMWENGHIAN USIEMWANTA", "name")}
+            >
+              <Icon name={copiedField === "name" ? "check" : "content_copy"} size={16} />
+              {copiedField === "name" ? "Copied" : "Copy"}
+            </button>
+          </div>
+
+          <div className="bank-transfer-row">
+            <div className="bank-transfer-field">
+              <span className="bank-transfer-label">Bank</span>
+              <span className="bank-transfer-value">OPay (Opera Pay)</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={`bank-launch-btn${launchState !== "idle" ? " active" : ""}`}
+          onClick={handleCopyAndOpen}
+        >
+          {launchState === "idle" && (
+            <>
+              <OPayLogo size={18} />
+              <span>Copy account &amp; open OPay</span>
+              <Icon name="open_in_new" size={16} />
+            </>
+          )}
+          {launchState === "copied" && (
+            <>
+              <Icon name="check" size={18} />
+              <span>Account number copied, opening OPay...</span>
+            </>
+          )}
+          {launchState === "launched" && (
+            <>
+              <Icon name="check_circle" size={18} />
+              <span>Copied! Paste in your banking app</span>
+            </>
+          )}
+        </button>
+
+        <p className="bank-transfer-footnote">
+          Don{"'"}t have OPay? Copy the account number above and transfer from any Nigerian bank app.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function StepBanner({ step, total, label, sub }: { step: number; total: number; label: string; sub: string }) {
   return (
     <div className="step-banner">
@@ -384,6 +602,164 @@ interface DonatePageProps {
   onSuccess: (info: SuccessInfo) => void;
 }
 
+function TransferSuccessScreen({ amount, rate, donors, onBack, onAnother }: { amount: string; rate: number; donors: number; onBack: () => void; onAnother: () => void }) {
+  const screenRef = useRef<HTMLDivElement>(null);
+  const ngnAmt = parseFloat(amount) || 0;
+  const usdAmt = rate > 0 ? ngnAmt / rate : 0;
+  const [name, setName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  useGSAP(
+    () => {
+      if (!screenRef.current) return;
+      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+      tl.fromTo(".ts-ring", { scale: 0, rotation: -90 }, { scale: 1, rotation: 0, duration: 0.7, ease: "elastic.out(1, 0.55)" }, 0.15);
+      tl.fromTo(".ts-check-path", { strokeDashoffset: 48 }, { strokeDashoffset: 0, duration: 0.5, ease: "power3.out" }, 0.55);
+      tl.fromTo(".ts-headline", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 }, 0.7);
+      tl.fromTo(".ts-amount", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 }, 0.85);
+      tl.fromTo(".ts-equiv", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35 }, 1.0);
+      tl.fromTo(".ts-divider", { scaleX: 0 }, { scaleX: 1, duration: 0.4 }, 1.1);
+      tl.fromTo(".ts-flow-item", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, stagger: 0.1 }, 1.2);
+      tl.fromTo(".ts-name-area", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, 1.6);
+      tl.fromTo(".ts-actions", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 }, 1.8);
+    },
+    { dependencies: [], scope: screenRef }
+  );
+
+  return (
+    <div ref={screenRef} className="ts-screen">
+      <SubPageNav onBack={onBack} />
+      <main className="ts-main">
+        <div className="ts-bg-glow" />
+        <div className="ts-card">
+          {/* Success ring + check SVG */}
+          <div className="ts-ring">
+            <svg width="88" height="88" viewBox="0 0 88 88" fill="none" className="ts-ring-svg">
+              <circle cx="44" cy="44" r="40" stroke="url(#ring-grad)" strokeWidth="3" strokeLinecap="round" opacity="0.25" />
+              <circle cx="44" cy="44" r="40" stroke="url(#ring-grad)" strokeWidth="3" strokeLinecap="round" strokeDasharray="251" strokeDashoffset="62.75" className="ts-ring-arc" />
+              <defs>
+                <linearGradient id="ring-grad" x1="0" y1="0" x2="88" y2="88">
+                  <stop offset="0%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#7c3aed" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="ts-check-svg">
+              <path
+                className="ts-check-path"
+                d="M8 18.5L15 25.5L28 11"
+                stroke="url(#check-grad)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="48"
+                strokeDashoffset="0"
+              />
+              <defs>
+                <linearGradient id="check-grad" x1="8" y1="11" x2="28" y2="25.5">
+                  <stop offset="0%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#7c3aed" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <h1 className="ts-headline">Thank you for your generosity</h1>
+
+          <p className="ts-amount">₦{new Intl.NumberFormat("en-NG").format(Math.round(ngnAmt))}</p>
+          <p className="ts-equiv">≈ ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(usdAmt)} USD</p>
+
+          <div className="ts-divider" />
+
+          {/* Fund flow */}
+          <div className="ts-flow">
+            <div className="ts-flow-item">
+              <div className="ts-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14.4A6.4 6.4 0 1110 3.6a6.4 6.4 0 010 12.8zM9.2 6h1.6v4.4l3.72 2.24-.84 1.36-4.48-2.68V6z" fill="var(--primary)" />
+                </svg>
+              </div>
+              <div className="ts-flow-text">
+                <span className="ts-flow-label">Status</span>
+                <span className="ts-flow-value ts-pending">Pending verification</span>
+              </div>
+            </div>
+            <div className="ts-flow-item">
+              <div className="ts-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M16 4H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 10H4V6h12v8zm-6-1c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0-4.8c.99 0 1.8.81 1.8 1.8s-.81 1.8-1.8 1.8-1.8-.81-1.8-1.8.81-1.8 1.8-1.8z" fill="var(--primary)" />
+                </svg>
+              </div>
+              <div className="ts-flow-text">
+                <span className="ts-flow-label">Destination</span>
+                <span className="ts-flow-value">OPay · ****4463</span>
+              </div>
+            </div>
+            <div className="ts-flow-item">
+              <div className="ts-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm1 13H9v-2h2v2zm0-4H9V5h2v6z" fill="var(--primary)" />
+                </svg>
+              </div>
+              <div className="ts-flow-text">
+                <span className="ts-flow-label">What happens next</span>
+                <span className="ts-flow-value">We verify your transfer and add you to the donor wall</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Optional name */}
+          <div className="ts-name-area">
+            {!submitted ? (
+              <>
+                <p className="ts-name-prompt">Leave your name for the family <span className="ts-optional">(optional)</span></p>
+                <div className="ts-name-input-row">
+                  <input
+                    className="ts-name-input"
+                    type="text"
+                    placeholder="Your name or 'Anonymous'"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <button
+                    className="ts-name-submit"
+                    onClick={() => setSubmitted(true)}
+                    disabled={!name.trim()}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M2.01 16L17 9 2.01 2 2 7.5l10.5 1.5L2 10.5z" fill="currentColor" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="ts-name-confirmed">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="8" fill="rgba(16,185,129,.15)" />
+                  <path d="M4.5 8.2L7 10.5L11.5 5.5" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Thank you, {name}. The family will see your name.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Donor count */}
+          <p className="ts-donor-count">
+            You join <strong>{donors}</strong> other donor{donors !== 1 ? "s" : ""} supporting this family.
+          </p>
+
+          {/* Actions */}
+          <div className="ts-actions">
+            <button className="ts-btn-primary" onClick={onAnother}>Donate again</button>
+            <button className="ts-btn-secondary" onClick={onBack}>Return to campaign</button>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, rate }: DonatePageProps) {
   const methods = donateConfig.methods;
   const [method, setMethod] = useState(methods[0]?.id || "card");
@@ -391,12 +767,20 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
   const [amount, setAmount] = useState("");
   const [step, setStep] = useState("idle");
   const [recurring, setRecurring] = useState(false);
-  const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "US", zip: "" });
+  const [transferSuccess, setTransferSuccess] = useState(false);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "NG", zip: "" });
 
-  const presets = method === "card" ? PRESET_NGN : selectedToken.native || selectedToken.symbol === "WETH" ? PRESET_ETH : PRESET_USD;
+  const presets = method === "card" || method === "transfer" ? PRESET_NGN : selectedToken.native || selectedToken.symbol === "WETH" ? PRESET_ETH : PRESET_USD;
 
   const handleDonate = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+    if (method === "transfer") {
+      setTransferAmount(amount);
+      setTransferSuccess(true);
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      return;
+    }
     if (method === "card") {
       const cardDigits = cardForm.card.replace(/\s/g, "");
       if (!cardForm.email || cardDigits.length < 12 || cardForm.expiry.replace(/\D/g, "").length < 4 || cardForm.cvc.length < 3) {
@@ -447,6 +831,10 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
     if (step === "donating") return "Donating…";
     if (step === "confirming") return "Confirming…";
     if (step === "error") return "Check details and retry";
+    if (method === "transfer") {
+      const ngnAmt = parseFloat(amount) || 0;
+      return ngnAmt > 0 ? `I've sent ₦${new Intl.NumberFormat("en-NG").format(Math.round(ngnAmt))}` : "Confirm transfer";
+    }
     if (method === "card") {
       const ngnAmt = parseFloat(amount) || 0;
       return ngnAmt > 0 ? `Donate ₦${new Intl.NumberFormat("en-NG").format(Math.round(ngnAmt))} with card` : "Donate with card";
@@ -454,6 +842,18 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
     const amt = amount ? `${parseFloat(amount).toFixed(4).replace(/\.?0+$/, "")}` : "";
     return `Donate ${amt} ${tokenSymbolForUi}`;
   })();
+
+  if (transferSuccess) {
+    return (
+      <TransferSuccessScreen
+        amount={transferAmount}
+        rate={rate}
+        donors={stats.donors}
+        onBack={onBack}
+        onAnother={() => { setTransferSuccess(false); setAmount(""); setTransferAmount(""); }}
+      />
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-container-lowest)" }}>
@@ -475,6 +875,19 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
               <PayMethodTabs method={method} onChange={(m) => { setMethod(m); setAmount(""); }} methods={methods} />
             )}
             <AnimatePresence mode="wait">
+              {method === "transfer" && (
+                <motion.div
+                  key="transfer"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                  style={{ display: "flex", flexDirection: "column", gap: 40 }}
+                >
+                  <BankTransferDetails />
+                  <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol="NGN" presets={presets} activeAmount={amount} rate={rate} />
+                </motion.div>
+              )}
               {method === "card" && (
                 <motion.div
                   key="card"
