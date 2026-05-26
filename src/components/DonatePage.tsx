@@ -450,16 +450,15 @@ function OPayLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaunched?: () => void; amountSet?: boolean }) {
+function BankTransferDetails({ onOPayLaunched }: { onOPayLaunched?: () => void }) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [launchState, setLaunchState] = useState<"idle" | "copied" | "launched">("idle");
-  const [nudge, setNudge] = useState(false);
 
   const copy = (text: string, field: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-    if (amountSet) onOPayLaunched?.();
+    onOPayLaunched?.();
   };
 
   const handleCopyAndOpen = () => {
@@ -544,14 +543,7 @@ function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaun
         <button
           type="button"
           className={`bank-launch-btn${launchState !== "idle" ? " active" : ""}`}
-          onClick={() => {
-            if (!amountSet && launchState === "idle") {
-              setNudge(true);
-              setTimeout(() => setNudge(false), 2500);
-              return;
-            }
-            handleCopyAndOpen();
-          }}
+          onClick={handleCopyAndOpen}
         >
           {launchState === "idle" && (
             <>
@@ -573,21 +565,6 @@ function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaun
             </>
           )}
         </button>
-
-        <AnimatePresence>
-          {nudge && (
-            <motion.p
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2 }}
-              className="bank-nudge"
-            >
-              <Icon name="info" size={14} />
-              Pick an amount above first so we can confirm your transfer when you return
-            </motion.p>
-          )}
-        </AnimatePresence>
 
         <p className="bank-transfer-footnote">
           Don{"'"}t have OPay? Copy the account number above and transfer from any Nigerian bank app.
@@ -976,7 +953,7 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
                   style={{ display: "flex", flexDirection: "column", gap: 40 }}
                 >
                   <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol="NGN" presets={presets} activeAmount={amount} rate={rate} />
-                  <BankTransferDetails onOPayLaunched={armOPayTracking} amountSet={parseFloat(amount) > 0} />
+                  <BankTransferDetails onOPayLaunched={armOPayTracking} />
                 </motion.div>
               )}
               {method === "card" && (

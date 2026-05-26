@@ -414,7 +414,7 @@ export default function DonatePage() {
                       ))}
                     </div>
                   </div>
-                  <BankTransferDetails onOPayLaunched={armOPayTracking} amountSet={parseFloat(transferNgnAmount) > 0} />
+                  <BankTransferDetails onOPayLaunched={armOPayTracking} />
                   {parseFloat(transferNgnAmount) > 0 && (
                     <button
                       className="btn-tertiary-cta"
@@ -706,16 +706,15 @@ function OPayLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaunched?: () => void; amountSet?: boolean }) {
+function BankTransferDetails({ onOPayLaunched }: { onOPayLaunched?: () => void }) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [launchState, setLaunchState] = useState<"idle" | "copied" | "launched">("idle");
-  const [nudge, setNudge] = useState(false);
 
   const copy = (text: string, field: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-    if (amountSet) onOPayLaunched?.();
+    onOPayLaunched?.();
   };
 
   const handleCopyAndOpen = () => {
@@ -800,14 +799,7 @@ function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaun
         <button
           type="button"
           className={`bank-launch-btn${launchState !== "idle" ? " active" : ""}`}
-          onClick={() => {
-            if (!amountSet && launchState === "idle") {
-              setNudge(true);
-              setTimeout(() => setNudge(false), 2500);
-              return;
-            }
-            handleCopyAndOpen();
-          }}
+          onClick={handleCopyAndOpen}
         >
           {launchState === "idle" && (
             <>
@@ -829,13 +821,6 @@ function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaun
             </>
           )}
         </button>
-
-        {nudge && (
-          <p className="bank-nudge">
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>info</span>
-            Pick an amount above first so we can confirm your transfer when you return
-          </p>
-        )}
 
         <p className="bank-transfer-footnote">
           Don{"'"}t have OPay? Copy the account number above and transfer from any Nigerian bank app.
