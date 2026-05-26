@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "../../lib/gsap-config";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import { useCampaignStats } from "../../hooks/useCampaignStats";
+import { useNGNRate } from "../../hooks/useNGNRate";
 import { CAMPAIGN_GOAL_NGN } from "../../lib/contracts";
 
 const fmtNGN = (n: number) =>
@@ -12,12 +13,14 @@ const fmtNGN = (n: number) =>
 
 export function DonateCampaignBanner() {
   const stats = useCampaignStats();
+  const { rate } = useNGNRate();
   const bannerRef = useScrollReveal<HTMLDivElement>({ y: 20, duration: 0.5 });
   const barRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
 
   const progressPercent = stats.progressPercent;
-  const raisedNGN = (progressPercent / 100) * CAMPAIGN_GOAL_NGN;
+  const raisedUSDC = Number(stats.totalRaised) / 1e6;
+  const raisedNGN = Math.round(raisedUSDC * rate);
 
   const daysRemaining = stats.deadline
     ? Math.max(0, Math.ceil((Number(stats.deadline) - Date.now() / 1000) / 86400))
