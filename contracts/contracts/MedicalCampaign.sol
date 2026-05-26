@@ -76,8 +76,9 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
     /// @notice Timelock delay before a proposed swap adapter can be activated (48 hours)
     uint256 public constant ADAPTER_TIMELOCK = 48 hours;
 
-    uint256 public totalRaised;    // Cumulative USDC received
-    uint256 public donorCount;     // Unique donor addresses
+    uint256 public totalRaised;       // Cumulative on-chain USDC received
+    uint256 public offchainRaised;   // Admin-attested off-chain donations (no USDC in contract)
+    uint256 public donorCount;       // Unique donor addresses
 
     // ─── Swap adapter timelock ───────────────────────────────────────────────
 
@@ -148,6 +149,8 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
     event CircuitBreakerHalted();
     /// @notice SC-M2: Emitted on emergency ETH rescue so withdrawals are always on-chain visible
     event EmergencyETHWithdrawal(address indexed to, uint256 amount);
+    /// @notice Emitted when the owner credits an off-chain donation to the on-chain tally
+    event OffchainRaisedCredited(uint256 amount, string note, uint256 totalRaisedAfter);
 
     // ─────────────────────────────────────────────
     //  Errors
@@ -513,14 +516,27 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
     function withdrawToTreasury() external nonReentrant {
         if (msg.sender != treasury && msg.sender != owner())
             revert Unauthorized();
-        // Gap #10: Always require goalMin — if not met after deadline, refunds are available
-        if (totalRaised < goalMin) revert GoalNotReached();
 
         uint256 balance = usdc.balanceOf(address(this));
         require(balance > 0, "Nothing to withdraw");
 
         usdc.safeTransfer(treasury, balance);
         emit Withdrawn(treasury, balance);
+    }
+
+    /**
+     * @notice Credit an off-chain donation (bank transfer, NGN cash) to the on-chain tally.
+     * @dev No USDC is transferred — only `totalRaised` is incremented so the dashboard
+     *      shows a unified total across on-chain and off-chain donations.
+     *      The owner is responsible for verifying the corresponding funds before calling.
+     * @param amount USDC-equivalent in 6-decimal units (e.g. ₦5000 ÷ 1300 ≈ 3.85 USDC → 3_850_000)
+     * @param note   Human-readable description visible on-chain (e.g. "OPay: ₦5000 — Chidi O.")
+     */
+    function creditOffchainRaised(uint256 amount, string calldata note) external onlyOwner {
+        if (amount == 0) revert ZeroAmount();
+        require(amount >= MIN_DONATION, "Below minimum donation");
+        offchainRaised += amount;
+        emit OffchainRaisedCredited(amount, note, totalRaised + offchainRaised);
     }
 
     // ─────────────────────────────────────────────
@@ -628,6 +644,8 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Returns key campaign stats for the dashboard.
+     * @dev _totalRaised is the unified display total (on-chain USDC + off-chain attestations).
+     *      _onchainRaised is the real USDC balance used for refunds and withdrawals.
      */
     function getCampaignStats() external view returns (
         uint256 _totalRaised,
@@ -637,17 +655,22 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
         uint256 _donorCount,
         uint256 _donationsCount,
         bool    _isActive,
-        bool    _minGoalReached
+        bool    _minGoalReached,
+        uint256 _onchainRaised,
+        uint256 _offchainRaised
     ) {
+        uint256 combined = totalRaised + offchainRaised;
         return (
-            totalRaised,
+            combined,
             goalMin,
             goalMax,
             deadline,
             donorCount,
             _allDonations.length,
             block.timestamp < deadline,
-            totalRaised >= goalMin
+            combined >= goalMin,
+            totalRaised,
+            offchainRaised
         );
     }
 
@@ -657,11 +680,9 @@ contract MedicalCampaign is Ownable, ReentrancyGuard, Pausable {
 
     function progressBps() external view returns (uint256) {
         if (goalMax == 0) return 0;
-        // SC-M3: Guard against overflow in the multiplication. Since Solidity 0.8 reverts on
-        // overflow, an extreme totalRaised would make this view function revert.
-        // If totalRaised is already ≥ goalMax the campaign is at/above 100% — return early.
-        if (totalRaised >= goalMax) return 10000;
-        uint256 bps = (totalRaised * 10000) / goalMax;
+        uint256 combined = totalRaised + offchainRaised;
+        if (combined >= goalMax) return 10000;
+        uint256 bps = (combined * 10000) / goalMax;
         return bps > 10000 ? 10000 : bps;
     }
 
