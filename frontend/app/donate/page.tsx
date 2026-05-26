@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   useAccount,
   useWriteContract,
@@ -67,6 +67,64 @@ export default function DonatePage() {
   const [method, setMethod] = useState<"transfer" | "crypto">("transfer");
   const [transferSuccess, setTransferSuccess] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
+  const [transferNgnAmount, setTransferNgnAmount] = useState("");
+
+  // Return prompt (visibility-aware transfer confirmation)
+  const [showReturnPrompt, setShowReturnPrompt] = useState(false);
+  const departedAt = useRef<number>(0);
+  const opayArmed = useRef(false);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const promptDismissed = useRef(false);
+
+  const armOPayTracking = useCallback(() => {
+    opayArmed.current = true;
+    departedAt.current = 0;
+    promptDismissed.current = false;
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(() => {
+      if (opayArmed.current && !promptDismissed.current && parseFloat(transferNgnAmount) > 0) {
+        setShowReturnPrompt(true);
+      }
+    }, 150_000);
+  }, [transferNgnAmount]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!opayArmed.current) return;
+      if (document.visibilityState === "hidden") {
+        departedAt.current = Date.now();
+      } else if (departedAt.current > 0) {
+        const awayMs = Date.now() - departedAt.current;
+        departedAt.current = 0;
+        if (awayMs >= 30_000 && !promptDismissed.current && parseFloat(transferNgnAmount) > 0) {
+          setTimeout(() => setShowReturnPrompt(true), 2000);
+          opayArmed.current = false;
+          if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => {
+      document.removeEventListener("visibilitychange", handler);
+      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    };
+  }, [transferNgnAmount]);
+
+  const handleReturnConfirm = () => {
+    setShowReturnPrompt(false);
+    opayArmed.current = false;
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    setTransferAmount(transferNgnAmount);
+    setTransferSuccess(true);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  };
+
+  const handleReturnDismiss = () => {
+    setShowReturnPrompt(false);
+    promptDismissed.current = true;
+    opayArmed.current = true;
+    departedAt.current = 0;
+  };
 
   // Crypto state (from file 1)
   const [selectedToken, setSelectedToken] = useState<TokenInfo>(SUPPORTED_TOKENS[0]);
@@ -342,8 +400,29 @@ export default function DonatePage() {
               {/* ── Transfer Tab ── */}
               {method === "transfer" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-                  <BankTransferDetails />
-                   
+                  <div className="donate-section">
+                    <label className="donate-label">How much are you sending?</label>
+                    <div className="amount-input-wrap">
+                      <span style={{ fontSize: 18, fontWeight: 700, color: "var(--on-surface-variant)", padding: "0 0 0 16px" }}>₦</span>
+                      <input type="text" inputMode="decimal" value={transferNgnAmount} onChange={(e) => setTransferNgnAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0" className="amount-input" aria-label="Amount in Naira" />
+                    </div>
+                    <div className="preset-row" style={{ marginTop: 12 }}>
+                      {PRESET_NGN.map((p) => (
+                        <button key={p} className={`preset-btn${parseFloat(transferNgnAmount) === p ? " active" : ""}`} onClick={() => setTransferNgnAmount(p.toString())}>
+                          ₦{fmtNGN(p)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <BankTransferDetails onOPayLaunched={armOPayTracking} amountSet={parseFloat(transferNgnAmount) > 0} />
+                  {parseFloat(transferNgnAmount) > 0 && (
+                    <button
+                      className="btn-tertiary-cta"
+                      onClick={() => { setTransferAmount(transferNgnAmount); setTransferSuccess(true); window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }); }}
+                    >
+                      I{"'"}ve sent ₦{fmtNGN(parseFloat(transferNgnAmount))}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -527,6 +606,32 @@ export default function DonatePage() {
       </main>
 
       <Footer />
+
+      {showReturnPrompt && (
+        <div className="rp-backdrop" onClick={handleReturnDismiss}>
+          <div className="rp-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="rp-handle" />
+            <div className="rp-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: 28, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            </div>
+            <p className="rp-title">Welcome back</p>
+            <p className="rp-sub">
+              Did you complete your{" "}
+              {parseFloat(transferNgnAmount) > 0
+                ? `₦${fmtNGN(parseFloat(transferNgnAmount))}`
+                : ""}{" "}
+              transfer?
+            </p>
+            <div className="rp-actions">
+              <button className="rp-btn secondary" onClick={handleReturnDismiss}>Not yet</button>
+              <button className="rp-btn primary" onClick={handleReturnConfirm}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
+                Yes, I sent it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -601,25 +706,38 @@ function OPayLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function BankTransferDetails() {
+function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaunched?: () => void; amountSet?: boolean }) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [launchState, setLaunchState] = useState<"idle" | "copied" | "launched">("idle");
+  const [nudge, setNudge] = useState(false);
 
   const copy = (text: string, field: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
+    if (amountSet) onOPayLaunched?.();
   };
 
   const handleCopyAndOpen = () => {
     navigator.clipboard?.writeText("6557984463");
     setLaunchState("copied");
+    onOPayLaunched?.();
     setTimeout(() => {
       setLaunchState("launched");
       const isAndroid = /android/i.test(navigator.userAgent);
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      if (isAndroid) window.location.href = "intent://#Intent;scheme=opay;package=com.opay.pay;end";
-      else if (isIOS)  window.location.href = "opay://";
+      if (isAndroid) {
+        window.location.href =
+          "intent://business#Intent;scheme=opay;package=team.opay.pay;" +
+          "S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dteam.opay.pay;end";
+      } else if (isIOS) {
+        window.location.href = "opay://";
+        setTimeout(() => {
+          if (document.visibilityState !== "hidden") {
+            window.location.href = "https://apps.apple.com/app/id1463776084";
+          }
+        }, 2500);
+      }
       setTimeout(() => setLaunchState("idle"), 4000);
     }, 600);
   };
@@ -682,7 +800,14 @@ function BankTransferDetails() {
         <button
           type="button"
           className={`bank-launch-btn${launchState !== "idle" ? " active" : ""}`}
-          onClick={handleCopyAndOpen}
+          onClick={() => {
+            if (!amountSet && launchState === "idle") {
+              setNudge(true);
+              setTimeout(() => setNudge(false), 2500);
+              return;
+            }
+            handleCopyAndOpen();
+          }}
         >
           {launchState === "idle" && (
             <>
@@ -704,6 +829,13 @@ function BankTransferDetails() {
             </>
           )}
         </button>
+
+        {nudge && (
+          <p className="bank-nudge">
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>info</span>
+            Pick an amount above first so we can confirm your transfer when you return
+          </p>
+        )}
 
         <p className="bank-transfer-footnote">
           Don{"'"}t have OPay? Copy the account number above and transfer from any Nigerian bank app.
