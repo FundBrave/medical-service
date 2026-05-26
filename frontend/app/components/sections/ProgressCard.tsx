@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 
+import { gsap } from "@/app/lib/gsap-config";
 import { animateSectionEntrance, animateCounter } from "@/app/lib/animations";
 import { Icon } from "./Icon";
 import { ProgressBar } from "./ProgressBar";
@@ -26,55 +27,59 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
   const disbursedRef = useRef<HTMLParagraphElement>(null);
   const progressRef = useRef<HTMLParagraphElement>(null);
 
+  // Entrance animation — fires once via ScrollTrigger when section enters view
   useGSAP(
     () => {
       if (!sectionRef.current) return;
-
-      const tl = animateSectionEntrance(sectionRef.current, {
-        header: ".progress-label",
-      });
-
-      // Right cards stagger
+      const tl = animateSectionEntrance(sectionRef.current, { header: ".progress-label" });
       tl.fromTo(
         sectionRef.current.querySelectorAll(".right-card, .donor-avatars"),
         { x: 30, opacity: 0 },
         { x: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" },
         0.5
       );
-
-      // Progress bar fill — added to timeline for proper cleanup
-      const bar = sectionRef.current.querySelector(".progress-bar-fill") as HTMLElement;
-      if (bar) {
-        const width = bar.style.width;
-        tl.fromTo(bar, { width: "0%" }, { width, duration: 1.5, ease: "power2.out" }, 0.3);
-      }
-
-      // Counter animations — added to timeline so they fire after scroll trigger
-      const raisedNgn = Math.round(stats.raised * rate);
-      if (raisedNgnRef.current && raisedNgn > 0) {
-        tl.add(animateCounter(raisedNgnRef.current, raisedNgn, { prefix: "₦", duration: 1.8 }), 0.3);
-      }
-      if (raisedUsdRef.current && stats.raised > 0) {
-        tl.add(animateCounter(raisedUsdRef.current, stats.raised, { prefix: "≈ $", duration: 1.8 }), 0.3);
-      }
-      if (donorRef.current && stats.donors > 0) {
-        tl.add(animateCounter(donorRef.current, stats.donors, { duration: 1.4 }), 0.4);
-      }
-      if (avgRef.current) {
-        const avgUsd = stats.donors > 0 ? Math.round(stats.raised / stats.donors) : 0;
-        const avgNgn = Math.round(avgUsd * rate);
-        if (avgNgn > 0) tl.add(animateCounter(avgRef.current, avgNgn, { prefix: "₦", duration: 1.4 }), 0.4);
-      }
-      if (disbursedRef.current) {
-        const disbursedNgn = Math.round(stats.raised * 0.94 * rate);
-        if (disbursedNgn > 0) tl.add(animateCounter(disbursedRef.current, disbursedNgn, { prefix: "₦", duration: 1.4 }), 0.4);
-      }
-      if (progressRef.current && pct > 0) {
-        tl.add(animateCounter(progressRef.current, pct, { suffix: "%", duration: 1.4 }), 0.4);
-      }
     },
     { dependencies: [], scope: sectionRef }
   );
+
+  // Counter + bar updates — re-fires whenever on-chain data arrives or changes
+  useGSAP(
+    () => {
+      if (!sectionRef.current || stats.raised <= 0) return;
+
+      const raisedNgn = Math.round(stats.raised * rate);
+      if (raisedNgnRef.current) {
+        animateCounter(raisedNgnRef.current, raisedNgn, { prefix: "₦", duration: 1.4 });
+      }
+      if (raisedUsdRef.current) {
+        animateCounter(raisedUsdRef.current, stats.raised, { prefix: "≈ $", decimals: 2, duration: 1.4 });
+      }
+      if (donorRef.current && stats.donors > 0) {
+        animateCounter(donorRef.current, stats.donors, { duration: 1.2 });
+      }
+      if (avgRef.current) {
+        const avgNgn = Math.round((stats.donors > 0 ? stats.raised / stats.donors : 0) * rate);
+        if (avgNgn > 0) animateCounter(avgRef.current, avgNgn, { prefix: "₦", duration: 1.2 });
+      }
+      if (disbursedRef.current) {
+        const disbursedNgn = Math.round(stats.raised * 0.94 * rate);
+        if (disbursedNgn > 0) animateCounter(disbursedRef.current, disbursedNgn, { prefix: "₦", duration: 1.2 });
+      }
+      if (progressRef.current && pct > 0) {
+        animateCounter(progressRef.current, pct, { suffix: "%", duration: 1.2 });
+      }
+
+      // Re-animate progress bar when data arrives
+      const bar = sectionRef.current.querySelector(".progress-bar-fill") as HTMLElement;
+      if (bar && pct > 0) {
+        gsap.fromTo(bar, { width: "0%" }, { width: `${Math.min(pct, 100)}%`, duration: 1.5, ease: "power2.out" });
+      }
+    },
+    { dependencies: [stats.raised, rate, pct, stats.donors], scope: sectionRef }
+  );
+
+  const fmtNGN = (n: number) => new Intl.NumberFormat("en-NG").format(Math.round(n));
+  const fmtUSD = (n: number) => new Intl.NumberFormat("en-US").format(n);
 
   return (
     <section className="progress-section" ref={sectionRef}>
@@ -85,11 +90,24 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
               <div>
                 <p className="progress-label">Total Raised</p>
                 <span className="money money-xl money-stack">
-                  <span className="money-ngn" ref={raisedNgnRef}>₦0</span>
-                  <span className="money-usd" ref={raisedUsdRef}>≈ $0</span>
+                  <span className="money-ngn" ref={raisedNgnRef}>
+                    {stats.raised > 0 ? `₦${fmtNGN(stats.raised * rate)}` : "₦0"}
+                  </span>
+                  <span className="money-usd" ref={raisedUsdRef}>
+                    {stats.raised > 0 ? `≈ $${stats.raised.toFixed(2)}` : "≈ $0"}
+                  </span>
                 </span>
                 <p className="progress-meta" style={{ marginTop: 12 }}>
-                  of <span className="money money-sm"><span className="money-ngn">₦{new Intl.NumberFormat("en-NG").format(campaign.goalNGN || Math.round(campaign.goal * rate))}</span> <span className="money-usd">≈ ${new Intl.NumberFormat("en-US").format(campaign.goal)}</span></span> goal · settles in USDC
+                  of{" "}
+                  <span className="money money-sm">
+                    <span className="money-ngn">
+                      {"₦"}{fmtNGN(campaign.goalNGN || Math.round(campaign.goal * rate))}
+                    </span>{" "}
+                    <span className="money-usd">
+                      {"≈ $"}{fmtUSD(campaign.goal)}
+                    </span>
+                  </span>{" "}
+                  goal{" ·"} settles in USDC
                 </p>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
@@ -111,18 +129,28 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
               </div>
               <div className="pstat-cell">
                 <p className="pstat-label">Avg gift</p>
-                <p className="pstat-primary" ref={avgRef}>₦{new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 }).format(Math.round((stats.donors > 0 ? stats.raised / stats.donors : 0) * rate))}</p>
-                <p className="pstat-secondary">≈ ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(stats.donors > 0 ? Math.round(stats.raised / stats.donors) : 0)}</p>
+                <p className="pstat-primary" ref={avgRef}>
+                  {"₦"}{fmtNGN((stats.donors > 0 ? stats.raised / stats.donors : 0) * rate)}
+                </p>
+                <p className="pstat-secondary">
+                  {"≈ $"}{fmtUSD(stats.donors > 0 ? Math.round(stats.raised / stats.donors) : 0)}
+                </p>
               </div>
               <div className="pstat-cell">
                 <p className="pstat-label">Disbursed</p>
-                <p className="pstat-primary" ref={disbursedRef}>₦{new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 }).format(Math.round(stats.raised * 0.94 * rate))}</p>
-                <p className="pstat-secondary">≈ ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(stats.raised * 0.94))}</p>
+                <p className="pstat-primary" ref={disbursedRef}>
+                  {"₦"}{fmtNGN(stats.raised * 0.94 * rate)}
+                </p>
+                <p className="pstat-secondary">
+                  {"≈ $"}{fmtUSD(Math.round(stats.raised * 0.94))}
+                </p>
               </div>
               <div className="pstat-cell">
                 <p className="pstat-label">Goal Progress</p>
                 <p className="pstat-primary" ref={progressRef}>{pct}%</p>
-                <p className="pstat-secondary">of ₦{new Intl.NumberFormat("en-NG").format(campaign.goalNGN || Math.round(campaign.goal * rate))} goal</p>
+                <p className="pstat-secondary">
+                  of {"₦"}{fmtNGN(campaign.goalNGN || Math.round(campaign.goal * rate))} goal
+                </p>
               </div>
             </div>
           </div>
