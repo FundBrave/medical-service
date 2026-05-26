@@ -1,0 +1,56 @@
+import type { Metadata } from "next";
+import { Providers } from "./providers";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ScrollToTop } from "./components/ScrollToTop";
+import { PrivacyBanner } from "./components/PrivacyBanner";
+import "material-symbols/outlined.css";
+import "./globals.css";
+
+
+// FE-L1: metadataBase is required for absolute OG image URLs
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
+  icons: {
+    icon: "/images/logo/Fundbrave_icon-gradient.png",
+    apple: "/images/logo/Fundbrave_icon-gradient.png",
+  },
+  title: "Medical support",
+  description:
+    "A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
+  openGraph: {
+    title: "Medical support",
+    description:
+      "A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
+    type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Abeokuta Logos Circle" }],
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Preconnect before the stylesheet so the font origin is already open */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap"
+        />
+      </head>
+      <body className="min-h-screen bg-[#0A0E1A] text-[#dfe2f3] antialiased font-body" suppressHydrationWarning>
+        <ScrollToTop />
+        <ErrorBoundary>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
+        <PrivacyBanner />
+      </body>
+    </html>
+  );
+}

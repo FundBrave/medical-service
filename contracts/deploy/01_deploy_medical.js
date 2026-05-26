@@ -6,7 +6,7 @@
  *   2. MedicalStaking        — Aave yield → campaign donations
  *   3. AbeokutaCCTPReceiver  — receives CCTP cross-chain USDC transfers
  *
- * Campaign goal: ₦1,000,000 (~$625 USDC) min | $2,000 USDC max (allows overfunding for ongoing treatment)
+ * Campaign goal: ₦1,500,000 (~$1,150 USDC)
  *
  * Usage:
  *   npm run deploy:testnet   (Base Sepolia)
@@ -27,11 +27,11 @@ const CONFIG = {
     aavePool:      "0xA14694B3a1788D22c660C837842B2d22E24983B4",
     aUsdc:         "0xCdF55352fa73B548d81E57f2Ebb691462bD4a95F",
     swapAdapter:        "0x5708A691d0242899Ae12dD8F47876319730F5987", // MockSwapAdapter on Base Sepolia
-    messageTransmitter: "0x7865fAfC2db2093669d92c0197e5d6f4D14BF38B", // CCTP v1 on Base Sepolia
+    messageTransmitter: "0x7865fafc2db2093669d92c0197e5d6f4d14bf38b", // CCTP v1 on Base Sepolia
     bridgeAddress:      process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
-    goalMinUSDC:   625,    // ≈ ₦1,000,000 at 1600 NGN/USD
-    goalMaxUSDC:   625,
-    durationDays:  14,
+    goalMinUSDC:   1150,   // ≈ ₦1,500,000
+    goalMaxUSDC:   1150,
+    durationDays:  21,
   },
   // Base Mainnet
   8453: {
@@ -44,9 +44,9 @@ const CONFIG = {
     weth:               "0x4200000000000000000000000000000000000006",
     messageTransmitter: "0xAD09780d193884d503182aD4588450C416D6F9D4", // CCTP v1 on Base
     bridgeAddress:      process.env.BRIDGE_ADDRESS || ethers.ZeroAddress,
-    goalMinUSDC:        625,
-    goalMaxUSDC:        625,
-    durationDays:       14,
+    goalMinUSDC:        1150,
+    goalMaxUSDC:        1150,
+    durationDays:       21,
   },
   // Hardhat localhost
   31337: {
