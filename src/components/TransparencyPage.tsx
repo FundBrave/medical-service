@@ -297,7 +297,7 @@ export function TransparencyPage({ campaign, stats, rate, transparency, benefici
           <TransparencyMultisig signers={transparency.signers} treasury={transparency.treasury} />
         </section>
         <TransparencyFundFlow flows={transparency.flows} />
-        <section className="tp-grid-2" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        <section className="tp-grid-2 tp-grid-even">
           <TransparencyContracts contracts={transparency.contracts} />
           <TransparencyActivityFeed feed={transparency.feed} rate={rate} />
         </section>

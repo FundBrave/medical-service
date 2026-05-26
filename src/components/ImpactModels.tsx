@@ -49,7 +49,7 @@ export function ImpactModels({ title, sub, donateCard, stakeCard, showStake = tr
           { y: 20, opacity: 0 },
           {
             y: 0, opacity: 1, duration: 0.45, stagger: 0.08, ease: "power2.out",
-            scrollTrigger: { trigger: card, start: "top 85%", toggleActions: "play none none none" },
+            scrollTrigger: { trigger: card, start: "top 65%", toggleActions: "play none none none" },
           }
         );
       });

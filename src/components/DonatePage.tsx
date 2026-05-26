@@ -450,19 +450,22 @@ function OPayLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function BankTransferDetails() {
+function BankTransferDetails({ onOPayLaunched, amountSet = false }: { onOPayLaunched?: () => void; amountSet?: boolean }) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [launchState, setLaunchState] = useState<"idle" | "copied" | "launched">("idle");
+  const [nudge, setNudge] = useState(false);
 
   const copy = (text: string, field: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
+    if (amountSet) onOPayLaunched?.();
   };
 
   const handleCopyAndOpen = () => {
     navigator.clipboard?.writeText("6557984463");
     setLaunchState("copied");
+    onOPayLaunched?.();
 
     setTimeout(() => {
       setLaunchState("launched");
@@ -471,9 +474,16 @@ function BankTransferDetails() {
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
       if (isAndroid) {
-        window.location.href = "intent://#Intent;scheme=opay;package=com.opay.pay;end";
+        window.location.href =
+          "intent://business#Intent;scheme=opay;package=team.opay.pay;" +
+          "S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dteam.opay.pay;end";
       } else if (isIOS) {
         window.location.href = "opay://";
+        setTimeout(() => {
+          if (document.visibilityState !== "hidden") {
+            window.location.href = "https://apps.apple.com/app/id1463776084";
+          }
+        }, 2500);
       }
 
       setTimeout(() => setLaunchState("idle"), 4000);
@@ -534,7 +544,14 @@ function BankTransferDetails() {
         <button
           type="button"
           className={`bank-launch-btn${launchState !== "idle" ? " active" : ""}`}
-          onClick={handleCopyAndOpen}
+          onClick={() => {
+            if (!amountSet && launchState === "idle") {
+              setNudge(true);
+              setTimeout(() => setNudge(false), 2500);
+              return;
+            }
+            handleCopyAndOpen();
+          }}
         >
           {launchState === "idle" && (
             <>
@@ -556,6 +573,21 @@ function BankTransferDetails() {
             </>
           )}
         </button>
+
+        <AnimatePresence>
+          {nudge && (
+            <motion.p
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="bank-nudge"
+            >
+              <Icon name="info" size={14} />
+              Pick an amount above first so we can confirm your transfer when you return
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         <p className="bank-transfer-footnote">
           Don{"'"}t have OPay? Copy the account number above and transfer from any Nigerian bank app.
@@ -770,6 +802,65 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
   const [transferSuccess, setTransferSuccess] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
   const [cardForm, setCardForm] = useState<CardForm>({ email: "", card: "", expiry: "", cvc: "", country: "NG", zip: "" });
+  const [showReturnPrompt, setShowReturnPrompt] = useState(false);
+  const departedAt = useRef<number>(0);
+  const opayArmed = useRef(false);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const promptDismissed = useRef(false);
+
+  const armOPayTracking = useCallback(() => {
+    opayArmed.current = true;
+    departedAt.current = 0;
+    promptDismissed.current = false;
+
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(() => {
+      if (opayArmed.current && !promptDismissed.current && parseFloat(amount) > 0) {
+        setShowReturnPrompt(true);
+      }
+    }, 150_000);
+  }, [amount]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!opayArmed.current) return;
+
+      if (document.visibilityState === "hidden") {
+        departedAt.current = Date.now();
+      } else if (departedAt.current > 0) {
+        const awayMs = Date.now() - departedAt.current;
+        departedAt.current = 0;
+
+        if (awayMs >= 30_000 && !promptDismissed.current && parseFloat(amount) > 0) {
+          setTimeout(() => setShowReturnPrompt(true), 2000);
+          opayArmed.current = false;
+          if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => {
+      document.removeEventListener("visibilitychange", handler);
+      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    };
+  }, [amount]);
+
+  const handleReturnConfirm = () => {
+    setShowReturnPrompt(false);
+    opayArmed.current = false;
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    const amt = amount || "0";
+    setTransferAmount(amt);
+    setTransferSuccess(true);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  };
+
+  const handleReturnDismiss = () => {
+    setShowReturnPrompt(false);
+    promptDismissed.current = true;
+    opayArmed.current = true;
+    departedAt.current = 0;
+  };
 
   const presets = method === "card" || method === "transfer" ? PRESET_NGN : selectedToken.native || selectedToken.symbol === "WETH" ? PRESET_ETH : PRESET_USD;
 
@@ -884,8 +975,8 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
                   transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                   style={{ display: "flex", flexDirection: "column", gap: 40 }}
                 >
-                  <BankTransferDetails />
                   <DonateAmountInput amount={amount} onChange={setAmount} tokenSymbol="NGN" presets={presets} activeAmount={amount} rate={rate} />
+                  <BankTransferDetails onOPayLaunched={armOPayTracking} amountSet={parseFloat(amount) > 0} />
                 </motion.div>
               )}
               {method === "card" && (
@@ -970,6 +1061,49 @@ export function DonatePage({ campaign, stats, onBack, onSuccess, donateConfig, r
         </div>
       </main>
       <Footer />
+      <AnimatePresence>
+        {showReturnPrompt && (
+          <motion.div
+            key="return-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="rp-backdrop"
+            onClick={handleReturnDismiss}
+          >
+            <motion.div
+              key="return-sheet"
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 340 }}
+              className="rp-sheet"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="rp-handle" />
+              <div className="rp-icon">
+                <Icon name="check_circle" size={28} fill={1} />
+              </div>
+              <p className="rp-title">Welcome back</p>
+              <p className="rp-sub">
+                Did you complete your{" "}
+                {parseFloat(amount) > 0
+                  ? `₦${new Intl.NumberFormat("en-NG").format(Math.round(parseFloat(amount)))}`
+                  : ""}{" "}
+                transfer?
+              </p>
+              <div className="rp-actions">
+                <button className="rp-btn secondary" onClick={handleReturnDismiss}>Not yet</button>
+                <button className="rp-btn primary" onClick={handleReturnConfirm}>
+                  <Icon name="check" size={18} />
+                  Yes, I sent it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

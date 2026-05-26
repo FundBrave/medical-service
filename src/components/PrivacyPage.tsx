@@ -135,7 +135,7 @@ export function PrivacyPage({ activeView, onNavigate }: PrivacyPageProps) {
     () => {
       if (!mainRef.current) return;
       const tl = gsap.timeline({
-        scrollTrigger: { trigger: mainRef.current, start: "top 90%", toggleActions: "play none none none" },
+        scrollTrigger: { trigger: mainRef.current, start: "top 65%", toggleActions: "play none none none" },
         defaults: { ease: "power4.out" },
       });
       tl.fromTo(".prv-hero-label", { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, 0.1);

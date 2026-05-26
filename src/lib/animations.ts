@@ -3,7 +3,7 @@
 import { gsap, ScrollTrigger } from "./gsap-config";
 
 export const SCROLL_DEFAULTS: ScrollTrigger.StaticVars = {
-  start: "top 80%",
+  start: "top 65%",
   end: "top 20%",
   toggleActions: "play none none none",
 };

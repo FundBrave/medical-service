@@ -66,7 +66,7 @@ export function PhotoGallery({ title, sub, items }: PhotoGalleryProps) {
         { y: 20, opacity: 0 },
         {
           y: 0, opacity: 1, duration: 0.5, ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 80%", toggleActions: "play none none none" },
+          scrollTrigger: { trigger: sectionRef.current, start: "top 65%", toggleActions: "play none none none" },
         }
       );
 
@@ -75,7 +75,7 @@ export function PhotoGallery({ title, sub, items }: PhotoGalleryProps) {
         { y: 50, opacity: 0, scale: 0.95 },
         {
           y: 0, opacity: 1, scale: 1, duration: 0.7, stagger: 0.1, ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current.querySelector(".gallery-grid"), start: "top 85%", toggleActions: "play none none none" },
+          scrollTrigger: { trigger: sectionRef.current.querySelector(".gallery-grid"), start: "top 65%", toggleActions: "play none none none" },
         }
       );
     },

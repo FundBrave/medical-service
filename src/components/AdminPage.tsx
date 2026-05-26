@@ -107,7 +107,7 @@ export function AdminPage({ campaign, stats, rate, transparency, onBack }: Admin
               <Icon name="refresh" size={16} />
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
+          <div className="admin-stat-grid" style={{ display: "grid", gap: 12, marginBottom: 12 }}>
             <StatCard label="Total Raised" value={`₦${formatNGN(stats.raised, rate)}`} sub={`${progressPct}% of ₦${new Intl.NumberFormat("en-NG").format(campaign.goalNGN || Math.round(campaign.goal * rate))}`} />
             <StatCard label="USDC in Contract" value={`$${Math.round(usdcBalance).toLocaleString()}`} sub="available to withdraw" />
             <StatCard label="Donors" value={stats.donors.toString()} />
@@ -205,7 +205,7 @@ export function AdminPage({ campaign, stats, rate, transparency, onBack }: Admin
               </p>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+          <div className="admin-stat-grid three" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
             <StatCard label="Total Staked" value="$0.00" />
             <StatCard label="Unrealized Yield" value="$0.00" sub="pending harvest" />
             <StatCard label="Last Harvest" value="Never" />

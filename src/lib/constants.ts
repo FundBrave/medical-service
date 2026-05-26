@@ -1,13 +1,13 @@
 export const CAMPAIGN_DEFAULTS = {
   campaignName: "Save a Family Fighting Cancer",
   location: "Benin City, Nigeria",
-  goal: 625,
-  goalNGN: 1_000_000,
+  goal: 1150,
+  goalNGN: 1_500_000,
   endDate: "Jul 31",
   daysLeft: 68,
-  headline1: "A family",
-  headline2: "fighting to survive.",
-  headline3: "They need you now.",
+  headline1: "Medical",
+  headline2: "Support",
+  headline3: "Fundraising",
   subhead:
     "A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
   initialRaised: 0,

@@ -231,8 +231,8 @@ function StakeTerminal({ tab, setTab, amount, setAmount, onAction, processing, r
 
 function StakeContextStats({ tvl, generatedImpact, supporters, rate }: { tvl: number; generatedImpact: number; supporters: number; rate: number }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-      <div style={{ background: "var(--surface-container-low)", borderRadius: 24, padding: 24, border: "1px solid rgba(67, 70, 85, .15)" }}>
+    <div className="imp-context-grid" style={{ display: "grid", gap: 16 }}>
+      <div style={{ background: "var(--surface-container-low)", borderRadius: 20, padding: 20, border: "1px solid rgba(67, 70, 85, .15)" }}>
         <p className="imp-position-label">Total value locked</p>
         <Money usd={tvl} rate={rate} size="lg" inline={false} decimals={0} />
         <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--on-surface-variant)" }}>
@@ -240,7 +240,7 @@ function StakeContextStats({ tvl, generatedImpact, supporters, rate }: { tvl: nu
           <span>{supporters} stakers</span>
         </div>
       </div>
-      <div style={{ background: "var(--surface-container-low)", borderRadius: 24, padding: 24, border: "1px solid rgba(67, 70, 85, .15)" }}>
+      <div style={{ background: "var(--surface-container-low)", borderRadius: 20, padding: 20, border: "1px solid rgba(67, 70, 85, .15)" }}>
         <p className="imp-position-label">Yield sent to campaign</p>
         <Money usd={generatedImpact} rate={rate} size="lg" inline={false} decimals={0} />
         <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--on-surface-variant)" }}>
