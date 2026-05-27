@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const FALLBACK_RATE = 1600;
+const FALLBACK_RATE = 1370;
 
 let cachedRate: number | null = null;
 let cachedAt = 0;
@@ -19,9 +19,7 @@ async function fetchParallelRate(): Promise<number> {
       const data = (await res.json()) as { rates?: Record<string, number> };
       const rate = data.rates?.NGN;
       if (rate && rate > 0) {
-        // exchangerate-api often returns something between CBN and parallel.
-        // If the rate is below 1500, it's likely CBN — bump to approximate parallel.
-        return rate < 1500 ? Math.round(rate * 1.15) : rate;
+        return rate;
       }
     }
   } catch {}
@@ -36,7 +34,7 @@ async function fetchParallelRate(): Promise<number> {
       const data = (await res.json()) as { rates?: Record<string, number> };
       const rate = data.rates?.NGN;
       if (rate && rate > 0) {
-        return rate < 1500 ? Math.round(rate * 1.15) : rate;
+        return rate;
       }
     }
   } catch {}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 //import cc from "cryptocompare";
 
-const FALLBACK_RATE = 1600;
+const FALLBACK_RATE = 1370;
 
 async function fetchRate(): Promise<number> {
   const res = await fetch("/api/exchange-rate");
