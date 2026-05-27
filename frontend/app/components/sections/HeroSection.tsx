@@ -98,7 +98,7 @@ export function HeroSection() {
 
         {/* Subheading */}
         <p className="hero-subtitle text-lg md:text-xl text-on-surface-variant max-w-2xl mb-12 leading-relaxed font-medium">
-           A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
+           A father on dialysis, battling an enlarged prostate and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
         </p>
 
         {/* CTAs */}
