@@ -104,7 +104,7 @@ export function HeroSection() {
 
           {/* Subhead */}
           <p className="hero-subhead">
-            A father on dialysis, battling prostate cancer and a severe kidney
+            A father on dialysis, battling an enlarged prostate and a severe kidney
             infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting
             surgery. Their children are watching both parents fight for their
             lives at the same time. This family cannot carry these bills alone.
