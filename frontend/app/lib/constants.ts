@@ -21,7 +21,7 @@ export const CAMPAIGN_DEFAULTS = {
   showStake: true,
   showStats: true,
   showGallery: true,
-  usdToNgn: 1600,
+  usdToNgn: 1370,
   beneficiaryNoun: "parents",
   beneficiaryCount: "2",
 
