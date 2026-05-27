@@ -29,7 +29,7 @@ export function StatsBar({ data, sectionTitle, sectionSub }: StatsBarProps) {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: el,
-          start: "top 80%",
+          start: "top 65%",
           end: "top 30%",
           toggleActions: "play none none none",
         },

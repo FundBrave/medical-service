@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "../../lib/gsap-config";
 import { useCampaignStats } from "../../hooks/useCampaignStats";
 import { getExplorerUrl } from "../../lib/contracts";
-import { SubPageNav } from "./SubPageNav";
+import { TopNavBar } from "./TopNavBar";
 import { Footer } from "./Footer";
 
 interface DonateSuccessScreenProps {
@@ -123,7 +123,7 @@ export function DonateSuccessScreen({
 
   return (
     <div ref={screenRef} className="min-h-screen bg-surface-container-lowest text-on-surface font-body flex flex-col">
-      <SubPageNav />
+      <TopNavBar />
 
       <main className="flex-grow pt-24 pb-12 flex items-center justify-center relative overflow-hidden px-2">
         {/* Background Decorative Elements */}

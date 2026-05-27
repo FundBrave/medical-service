@@ -5,7 +5,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { useStaking } from "../hooks/useStaking";
 import { useCampaignStats } from "../hooks/useCampaignStats";
 import { TARGET_CHAIN_ID, TARGET_CHAIN } from "../lib/contracts";
-import { SubPageNav } from "../components/sections/SubPageNav";
+import { TopNavBar } from "../components/sections/TopNavBar";
 import { StakePageHeader } from "../components/sections/StakePageHeader";
 import { StakePositionCard } from "../components/sections/StakePositionCard";
 import { StakeSplitConfigurator } from "../components/sections/StakeSplitConfigurator";
@@ -83,7 +83,7 @@ export default function StakePage() {
       <div className="fixed bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-secondary-container opacity-[0.05] blur-[100px] rounded-full -z-10 pointer-events-none" />
       <div className="fixed top-[40%] right-[10%] w-[20%] h-[20%] bg-tertiary-container opacity-[0.02] blur-[80px] rounded-full -z-10 pointer-events-none" />
 
-      <SubPageNav />
+      <TopNavBar />
 
       <main className="pt-28 pb-32 px-4 max-w-2xl mx-auto space-y-10">
         <StakePageHeader />

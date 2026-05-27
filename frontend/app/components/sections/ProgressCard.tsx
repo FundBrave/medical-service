@@ -83,7 +83,7 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
 
   return (
     <section className="progress-section" ref={sectionRef}>
-      <GlassCard style={{ padding: 48, maxWidth: 1440, margin: "0 auto" }}>
+      <GlassCard className="progress-card-glass" style={{ maxWidth: 1440, margin: "0 auto" }}>
         <div className="progress-grid">
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 24, flexWrap: "wrap" }}>
