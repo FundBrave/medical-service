@@ -9,17 +9,16 @@ import { GradientButton } from "../ui/GradientButton";
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
+  const photoWrapRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
-      if (!sectionRef.current || !bgRef.current) return;
+      if (!sectionRef.current || !photoWrapRef.current) return;
 
-      // Parallax — desktop only (disabled under 768px for performance)
-      // gsap.matchMedia() replaces the removed ScrollTrigger.matchMedia() API (GSAP 3.12+)
+      /* ── Parallax (desktop only) ────────────────────────────────────────── */
       const mm = gsap.matchMedia();
       mm.add("(min-width: 768px)", () => {
-        gsap.to(bgRef.current!, {
+        gsap.to(photoWrapRef.current!, {
           yPercent: 20,
           ease: "none",
           scrollTrigger: {
@@ -31,25 +30,32 @@ export function HeroSection() {
         });
       });
 
-      // Text cascade — plays on load
-      // Using fromTo() so both start/end states are explicit (immune to React cleanup/revert)
+      /* ── Text cascade ───────────────────────────────────────────────────── */
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tl.fromTo(".hero-badge",
+
+      tl.fromTo(
+        ".hero-badge-row",
         { y: 20, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.5 },
         0.2
       );
-      tl.fromTo(".hero-line",
+
+      tl.fromTo(
+        ".hero-line",
         { y: 60, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, stagger: 0.15 },
         0.4
       );
-      tl.fromTo(".hero-subtitle",
+
+      tl.fromTo(
+        ".hero-subhead",
         { y: 30, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.6 },
         0.9
       );
-      tl.fromTo(".hero-cta",
+
+      tl.fromTo(
+        ".hero-cta",
         { y: 20, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.5, stagger: 0.12 },
         1.1
@@ -59,61 +65,64 @@ export function HeroSection() {
   );
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative min-h-[85vh] flex items-center overflow-hidden pt-36 pb-40"
-    >
-      {/* Background image with gradient overlay */}
-      <div ref={bgRef} className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/40 via-[#0a0e1a]/70 to-[#0a0e1a] z-10" />
+    <section ref={sectionRef} className="hero">
+      {/* ── Photo layer (parallax target) ──────────────────────────────────── */}
+      <div ref={photoWrapRef} className="hero-photo-wrap">
         <Image
           src="/images/woman-1.jpg"
           alt="woman"
           fill
-          className="object-cover"
+          className="hero-photo"
           priority
         />
+        <div className="hero-overlay" />
       </div>
 
-      <div className="relative z-20 w-full max-w-[1440px] mx-auto px-2 lg:px-20">
-        <div className="max-w-4xl">
-        {/* Campaign badge */}
-        <div className="hero-badge flex items-center !w-[250px] gap-3 mb-6">
-          <span className="bg-surface-container-high text-on-surface-variant px-4 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase">
-            Ongoing Campaign
-          </span>
-          <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
-        </div>
+      {/* ── Decorative background blobs + grid ─────────────────────────────── */}
+      <div className="hero-bg" />
+      <div className="hero-grid" />
 
-        {/* Headline */}
-        <h1 className="text-5xl md:text-8xl font-headline font-extrabold tracking-tighter text-on-surface mb-8 leading-[0.95]">
-          <span className="hero-line inline-block">Medical</span>
-          <br />
-          <span className="hero-line inline-block gradient-text">
-            Support
-          </span>
-          <br />
-          <span className="hero-line inline-block">Fundraising</span>
-        </h1>
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      <div className="hero-content">
+        <div className="hero-inner">
+          {/* Badge */}
+          <div className="hero-badge-row">
+            <span className="hero-badge">Ongoing Campaign</span>
+            <span className="hero-badge-pulse" />
+          </div>
 
-        {/* Subheading */}
-        <p className="hero-subtitle text-lg md:text-xl text-on-surface-variant max-w-2xl mb-12 leading-relaxed font-medium">
-           A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
-        </p>
+          {/* Headline */}
+          <h1 className="hero-headline">
+            <span className="hero-line" style={{ display: "inline-block" }}>Medical</span>
+            <br />
+            <span className="hero-line gradient-text" style={{ display: "inline-block" }}>
+              Support
+            </span>
+            <br />
+            <span className="hero-line" style={{ display: "inline-block" }}>Fundraising</span>
+          </h1>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-6">
-          <Link href="/donate" className="w-full sm:w-auto">
-            <GradientButton size="lg" className="hero-cta w-full sm:w-auto">
-              Support the Mission
-            </GradientButton>
-          </Link>
-          <Link href="/dashboard" className="w-full sm:w-auto">
-            <GradientButton variant="outline" size="lg" className="hero-cta w-full sm:w-auto">
-              View Transparency Report
-            </GradientButton>
-          </Link>
-        </div>
+          {/* Subhead */}
+          <p className="hero-subhead">
+            A father on dialysis, battling prostate cancer and a severe kidney
+            infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting
+            surgery. Their children are watching both parents fight for their
+            lives at the same time. This family cannot carry these bills alone.
+          </p>
+
+          {/* CTAs */}
+          <div className="hero-ctas">
+            <Link href="/donate">
+              <GradientButton size="lg" className="hero-cta btn">
+                Support the Mission
+              </GradientButton>
+            </Link>
+            <Link href="/dashboard">
+              <GradientButton variant="outline" size="lg" className="hero-cta btn">
+                View Transparency Report
+              </GradientButton>
+            </Link>
+          </div>
         </div>
       </div>
     </section>

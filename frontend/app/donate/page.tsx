@@ -12,7 +12,7 @@ import {
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDonate } from "../hooks/useDonate";
 import { useCampaignStats } from "../hooks/useCampaignStats";
-import { SubPageNav } from "../components/sections/SubPageNav";
+import { TopNavBar } from "../components/sections/TopNavBar";
 import { Footer } from "../components/sections/Footer";
 import { CrossChainDonate } from "../components/CrossChainDonate";
 import { DonateCampaignBanner } from "../components/sections/DonateCampaignBanner";
@@ -343,7 +343,7 @@ export default function DonatePage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-container-lowest)" }}>
-      <SubPageNav />
+      <TopNavBar />
 
       <main className="donate-main">
         <div className="donate-wrap">
@@ -1061,7 +1061,7 @@ function TransferSuccessScreen({
 
   return (
     <div className="ts-screen" style={{ minHeight: "100vh", background: "var(--surface-container-lowest)" }}>
-      <SubPageNav />
+      <TopNavBar />
       <main className="ts-main">
         <div className="ts-bg-glow" />
         <div className="ts-card">

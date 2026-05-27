@@ -1,46 +1,72 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "../../lib/gsap-config";
-import { MobileDrawer } from "./MobileDrawer";
+import { AnimatePresence, motion } from "framer-motion";
+import { Icon } from "./Icon";
 
+/* ── Nav links ─────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
-  { label: "Campaigns", href: "/" },
-  { label: "Donate", href: "/donate" },
-  { label: "Transparency", href: "/dashboard" },
-  { label: "Impact", href: "/stake" },
+  { label: "Campaigns", href: "/", icon: "campaign" },
+  { label: "Donate", href: "/donate", icon: "volunteer_activism" },
+  { label: "Transparency", href: "/dashboard", icon: "monitoring" },
+  { label: "Impact", href: "/stake", icon: "trending_up" },
 ] as const;
 
-// Mobile drawer omits "Campaigns" — logo already links home
-const MOBILE_LINKS = NAV_LINKS.filter((l) => l.href !== "/");
+const DRAWER_LINKS = [
+  ...NAV_LINKS,
+  { label: "Privacy", href: "/privacy", icon: "shield" },
+] as const;
+
+/* ── Hamburger line variants (Framer Motion) ───────────────────────────────── */
+const line1 = {
+  closed: { rotate: 0, y: 0 },
+  open: { rotate: 45, y: 6 },
+};
+const line2 = {
+  closed: { opacity: 1 },
+  open: { opacity: 0 },
+};
+const line3 = {
+  closed: { rotate: 0, y: 0 },
+  open: { rotate: -45, y: -6 },
+};
 
 export function TopNavBar() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  // RainbowKit's ConnectButton renders differently server vs client.
-  // Guard it with `mounted` to prevent hydration mismatch that hides the button.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
 
+  // Scroll detection
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   // Entrance animation
   useGSAP(
@@ -55,153 +81,261 @@ export function TopNavBar() {
     { dependencies: [], scope: navRef }
   );
 
+  // Desktop link hover underline (GSAP)
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
-    const underline = e.currentTarget.querySelector(".nav-underline");
-    if (underline) {
-      gsap.to(underline, { scaleX: 1, duration: 0.3, ease: "power2.out", overwrite: true });
-    }
+    const el = e.currentTarget as HTMLElement;
+    const after = el.querySelector(".topnav-link") || el;
+    gsap.to(after, {
+      "--underline-scale": 1,
+      duration: 0.3,
+      ease: "power2.out",
+      overwrite: true,
+    });
   }, []);
 
   const handleMouseLeave = useCallback((e: React.MouseEvent) => {
-    const underline = e.currentTarget.querySelector(".nav-underline");
-    if (underline) {
-      gsap.to(underline, { scaleX: 0, duration: 0.3, ease: "power2.in", overwrite: true });
-    }
+    const el = e.currentTarget as HTMLElement;
+    const after = el.querySelector(".topnav-link") || el;
+    gsap.to(after, {
+      "--underline-scale": 0,
+      duration: 0.3,
+      ease: "power2.in",
+      overwrite: true,
+    });
   }, []);
 
   return (
     <>
+      {/* ── Top bar ──────────────────────────────────────────────────────────── */}
       <nav
         ref={navRef}
-        className="fixed top-0 w-full z-50 h-20"
-        style={{
-          backgroundColor:      scrolled || mobileOpen ? "rgba(10,14,26,0.85)" : "transparent",
-          backdropFilter:        scrolled || mobileOpen ? "blur(20px)"          : "none",
-          WebkitBackdropFilter:  scrolled || mobileOpen ? "blur(20px)"          : "none",
-          borderBottom:          scrolled ? "1px solid rgba(67,70,85,0.15)" : "1px solid transparent",
-          transition:            "background-color 300ms ease, backdrop-filter 300ms ease, border-color 300ms ease",
-        }}
+        className={`topnav${scrolled ? " scrolled" : ""}`}
       >
-        <div className="relative flex items-center px-4 md:px-6 lg:px-10 h-full max-w-[1440px] mx-auto">
-          {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+        <div className="topnav-inner">
+          {/* Brand */}
+          <Link href="/" className="topnav-brand">
             <Image
               src="/images/logo/Fundbrave_icon-gradient.png"
               alt="FundBrave"
               width={36}
               height={36}
-              className="rounded-lg"
             />
-            <span className="text-xl md:text-2xl font-bold tracking-tighter text-[#dfe2f3] font-headline">
-              FundBrave
-            </span>
+            <span>FundBrave</span>
           </Link>
 
-          {/* Center: Desktop nav links */}
-          <div className="hidden md:flex gap-6 font-medium tracking-tight absolute left-1/2 -translate-x-1/2">
+          {/* Desktop nav links */}
+          <div className="topnav-links">
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative pb-1 transition-colors ${
-                    isActive ? "text-[#dfe2f3]" : "text-[#dfe2f3]/60 hover:text-[#dfe2f3]"
-                  }`}
+                  className={`topnav-link${isActive ? " active" : ""}`}
                   onMouseEnter={isActive ? undefined : handleMouseEnter}
                   onMouseLeave={isActive ? undefined : handleMouseLeave}
                 >
                   {link.label}
-                  <span
-                    className={`nav-underline absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary-container to-secondary-container origin-left ${
-                      isActive ? "scale-x-100" : "scale-x-0"
-                    }`}
-                  />
                 </Link>
               );
             })}
           </div>
 
-          {/* Right: Wallet + Hamburger */}
-          <div className="flex items-center gap-3 ml-auto">
+          {/* Right side: wallet + hamburger */}
+          <div className="topnav-end">
+            {/* Wallet (desktop only) */}
             {mounted && (
               <ConnectButton.Custom>
-                {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted: rbMounted }) => {
+                {({
+                  account,
+                  chain,
+                  openAccountModal,
+                  openChainModal,
+                  openConnectModal,
+                  mounted: rbMounted,
+                }) => {
                   const connected = rbMounted && account && chain;
                   return (
-                    <div aria-hidden={!rbMounted} style={!rbMounted ? { opacity: 0, pointerEvents: "none", userSelect: "none" } : undefined}>
+                    <div
+                      className="topnav-wallet-desktop"
+                      aria-hidden={!rbMounted}
+                      style={
+                        !rbMounted
+                          ? { opacity: 0, pointerEvents: "none", userSelect: "none" }
+                          : undefined
+                      }
+                    >
                       {!connected ? (
-                        <button
-                          onClick={openConnectModal}
-                          type="button"
-                          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-on-primary transition-all hover:brightness-110 active:scale-95 md:px-4 md:text-sm"
-                        >
-                          <span className="material-symbols-outlined text-base leading-none">account_balance_wallet</span>
-                          <span className="hidden sm:inline">Connect</span>
-                          <span className="hidden md:inline"> Wallet</span>
+                        <button onClick={openConnectModal} type="button" className="btn btn-primary">
+                          <Icon name="account_balance_wallet" size={18} />
+                          Connect Wallet
                         </button>
                       ) : chain.unsupported ? (
-                        <button
-                          onClick={openChainModal}
-                          type="button"
-                          className="flex items-center gap-1.5 rounded-xl bg-red-500/20 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/30 md:px-4 md:text-sm"
-                        >
-                          <span className="material-symbols-outlined text-base leading-none">warning</span>
-                          <span className="hidden sm:inline">Wrong Network</span>
+                        <button onClick={openChainModal} type="button" className="btn btn-primary" style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>
+                          <Icon name="warning" size={18} />
+                          Wrong Network
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={openChainModal}
-                            type="button"
-                            className="hidden sm:flex items-center gap-1 rounded-lg bg-surface-container px-2 py-1.5 text-xs font-medium hover:bg-surface-variant"
-                          >
-                            {chain.iconUrl && (
-                              <img src={chain.iconUrl} alt={chain.name} className="h-4 w-4 rounded-full" />
-                            )}
-                            <span className="hidden md:inline">{chain.name}</span>
-                          </button>
-                          <button
-                            onClick={openAccountModal}
-                            type="button"
-                            className="flex items-center gap-1.5 rounded-xl bg-surface-container px-3 py-2 text-xs font-bold hover:bg-surface-variant md:px-4 md:text-sm"
-                          >
-                            {account.ensAvatar ? (
-                              <img src={account.ensAvatar} alt={account.displayName} className="h-5 w-5 rounded-full" />
-                            ) : (
-                              <span className="material-symbols-outlined text-base leading-none text-primary">account_circle</span>
-                            )}
-                            <span>{account.displayName}</span>
-                          </button>
-                        </div>
+                        <button onClick={openAccountModal} type="button" className="btn btn-secondary">
+                          <Icon name="account_circle" size={18} />
+                          {account.displayName}
+                        </button>
                       )}
                     </div>
                   );
                 }}
               </ConnectButton.Custom>
             )}
+
+            {/* Hamburger (mobile only) */}
             <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              className="topnav-hamburger"
+              onClick={() => setDrawerOpen((v) => !v)}
               aria-label="Toggle menu"
             >
-              <span className="material-symbols-outlined text-on-surface text-2xl">
-                {mobileOpen ? "close" : "menu"}
-              </span>
+              <motion.svg
+                width="20"
+                height="14"
+                viewBox="0 0 20 14"
+                initial={false}
+                animate={drawerOpen ? "open" : "closed"}
+              >
+                <motion.line
+                  x1="0" y1="1" x2="20" y2="1"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  variants={line1}
+                  transition={{ duration: 0.25 }}
+                />
+                <motion.line
+                  x1="0" y1="7" x2="20" y2="7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  variants={line2}
+                  transition={{ duration: 0.15 }}
+                />
+                <motion.line
+                  x1="0" y1="13" x2="20" y2="13"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  variants={line3}
+                  transition={{ duration: 0.25 }}
+                />
+              </motion.svg>
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <MobileDrawer
-          links={MOBILE_LINKS}
-          pathname={pathname}
-          onClose={() => setMobileOpen(false)}
-          topOffset="top-20"
-        />
-      )}
+      {/* ── Mobile drawer ────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setDrawerOpen(false)}
+            />
+
+            {/* Panel */}
+            <motion.aside
+              className="drawer"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 26, stiffness: 300 }}
+            >
+              <div className="drawer-header">
+                <span className="drawer-title">Navigate</span>
+              </div>
+
+              <div className="drawer-links">
+                {DRAWER_LINKS.map((link, i) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.05 + i * 0.05, duration: 0.2 }}
+                    >
+                      <Link
+                        href={link.href}
+                        className={`drawer-link${isActive ? " active" : ""}`}
+                        onClick={() => setDrawerOpen(false)}
+                      >
+                        <span className={`drawer-link-icon${isActive ? " active" : ""}`}>
+                          <Icon name={link.icon} size={20} />
+                        </span>
+                        {link.label}
+                        {isActive && <span className="drawer-active-dot" />}
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="drawer-divider" />
+
+              {/* Wallet button in drawer */}
+              {mounted && (
+                <ConnectButton.Custom>
+                  {({
+                    account,
+                    chain,
+                    openAccountModal,
+                    openConnectModal,
+                    mounted: rbMounted,
+                  }) => {
+                    const connected = rbMounted && account && chain;
+                    return (
+                      <div
+                        aria-hidden={!rbMounted}
+                        style={
+                          !rbMounted
+                            ? { opacity: 0, pointerEvents: "none", userSelect: "none" }
+                            : undefined
+                        }
+                      >
+                        {!connected ? (
+                          <button
+                            onClick={openConnectModal}
+                            type="button"
+                            className="drawer-wallet-btn"
+                          >
+                            <Icon name="account_balance_wallet" size={20} />
+                            Connect Wallet
+                          </button>
+                        ) : (
+                          <button
+                            onClick={openAccountModal}
+                            type="button"
+                            className="drawer-wallet-btn"
+                          >
+                            <Icon name="account_circle" size={20} />
+                            {account.displayName}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }}
+                </ConnectButton.Custom>
+              )}
+
+              <div className="drawer-footer">
+                <p>&copy; {new Date().getFullYear()} FundBrave</p>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
