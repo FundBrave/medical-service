@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 
 import { gsap } from "@/app/lib/gsap-config";
 import { animateSectionEntrance, animateCounter } from "@/app/lib/animations";
+import { CAMPAIGN_GOAL_MAX_USDC, CAMPAIGN_GOAL_NGN } from "@/app/lib/contracts";
 import { Icon } from "./Icon";
 import { ProgressBar } from "./ProgressBar";
 import { GlassCard } from "../ui/GlassCard";
@@ -17,7 +18,9 @@ interface ProgressCardProps {
 }
 
 export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
-  const pct = Math.round((stats.raised / campaign.goal) * 100);
+  const goalUsd = CAMPAIGN_GOAL_MAX_USDC;
+  const goalNgn = CAMPAIGN_GOAL_NGN;
+  const pct = Math.round((stats.raised / goalUsd) * 100);
   const sectionRef = useRef<HTMLElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const raisedNgnRef = useRef<HTMLSpanElement>(null);
@@ -101,10 +104,10 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
                   of{" "}
                   <span className="money money-sm">
                     <span className="money-ngn">
-                      {"₦"}{fmtNGN(campaign.goalNGN || Math.round(campaign.goal * rate))}
+                      {"₦"}{fmtNGN(goalNgn)}
                     </span>{" "}
                     <span className="money-usd">
-                      {"≈ $"}{fmtUSD(campaign.goal)}
+                      {"≈ $"}{fmtUSD(goalUsd)}
                     </span>
                   </span>{" "}
                   goal{" ·"} settles in USDC
@@ -120,7 +123,7 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
                 </p>
               </div>
             </div>
-            <ProgressBar value={stats.raised} max={campaign.goal} />
+            <ProgressBar value={stats.raised} max={goalUsd} />
             <div className="progress-stats">
               <div className="pstat-cell">
                 <p className="pstat-label">Donors</p>
@@ -149,7 +152,7 @@ export function ProgressCard({ campaign, stats, rate }: ProgressCardProps) {
                 <p className="pstat-label">Goal Progress</p>
                 <p className="pstat-primary" ref={progressRef}>{pct}%</p>
                 <p className="pstat-secondary">
-                  of {"₦"}{fmtNGN(campaign.goalNGN || Math.round(campaign.goal * rate))} goal
+                  of {"₦"}{fmtNGN(goalNgn)} goal
                 </p>
               </div>
             </div>
