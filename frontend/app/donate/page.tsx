@@ -1143,6 +1143,7 @@ function TransferSuccessScreen({
                     disabled={!name.trim()}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 18 }}>send</span>
+                    
                   </button>
                 </div>
               </>
