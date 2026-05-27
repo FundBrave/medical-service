@@ -400,7 +400,7 @@ export default function DonatePage() {
               {/* ── Transfer Tab ── */}
               {method === "transfer" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-                  <div className="donate-section">
+                  {/*<div className="donate-section">
                     <label className="donate-label">How much are you sending?</label>
                     <div className="amount-input-wrap">
                       <span style={{ fontSize: 18, fontWeight: 700, color: "var(--on-surface-variant)", padding: "0 0 0 16px" }}>₦</span>
@@ -413,7 +413,7 @@ export default function DonatePage() {
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </div>*/}
                   <BankTransferDetails onOPayLaunched={armOPayTracking} />
                   {parseFloat(transferNgnAmount) > 0 && (
                     <button
