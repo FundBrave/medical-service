@@ -9,7 +9,7 @@ export const CAMPAIGN_DEFAULTS = {
   headline2: "Support",
   headline3: "Fundraising",
   subhead:
-    "A father on dialysis, battling prostate cancer and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
+    "A father on dialysis, battling an enlarged prostate and a severe kidney infection. A mother diagnosed with Stage 3 ovarian cancer, awaiting surgery. Their children are watching both parents fight for their lives at the same time. This family cannot carry these bills alone.",
   initialRaised: 0,
   initialDonors: 0,
   primaryColor: "#7c3aed",
@@ -65,7 +65,7 @@ export const CAMPAIGN_DEFAULTS = {
       value: "2",
       unit: "",
       label: "Parents in treatment",
-      sublabel: "prostate cancer & ovarian cancer",
+      sublabel: "enlarged prostate & ovarian cancer",
       icon: "family_restroom",
     },
     {
@@ -100,7 +100,7 @@ export const CAMPAIGN_DEFAULTS = {
     {
       tag: "The Father",
       title: "Fighting to stay",
-      description: "On dialysis three times a week to stay alive while fighting prostate cancer and a kidney infection.",
+      description: "On dialysis three times a week to stay alive while managing an enlarged prostate and a severe kidney infection.",
       src: "/images/man-1.jpg",
       objectPosition: "right center",
     },
